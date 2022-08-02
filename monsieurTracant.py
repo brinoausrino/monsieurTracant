@@ -309,7 +309,7 @@ def export_image(output_image, mask):
 
     # print hpgl
     if run_params["print"]:  
-        bashCommand = "python hp7475a_send " + output_folder + str(currentId) + "_scaled.hpgl -p /dev/ttyUSB0"
+        bashCommand = "python hp7475a_send.py " + output_folder + str(currentId) + "_scaled.hpgl -p /dev/ttyUSB0"
         process = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
         output, error = process.communicate()
 
@@ -342,7 +342,7 @@ cv2.createTrackbar("blur_value", "output", 2, 7, set_blur_value)
 create_grid(grid)
 
 # select capture device
-cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture(2)
 
 # capture loop
 while cap.isOpened():
@@ -397,7 +397,12 @@ while cap.isOpened():
 
         # equalize histogram for better contrasts
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        gray = cv2.equalizeHist(gray)
+        
+        # we use clahe filter that creates better results than simple historgram equalize (see below)
+        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+        gray = clahe.apply(gray)
+        # gray = cv2.equalizeHist(gray)
+        cv2.imshow("hist", gray)
 
         # detect edges
         edge = edge_mask(gray, line_size, blur_value)
