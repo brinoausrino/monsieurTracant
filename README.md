@@ -11,6 +11,13 @@ First install [vpype](https://vpype.readthedocs.io/en/latest/install.html)
 sudo apt-get install pipx
 ```
 
+There is a custom paper template we use for the HP 7576A. Therefore copy `.vpype.toml` to
+
+* `/home/username/.vpype.toml` on Linux
+* `/Users/username/.vpype.toml` on Mac
+* `C:\Users\username\.vpype.toml` on Windows
+
+See [vpype dcoumentation](https://vpype.readthedocs.io/en/latest/cookbook.html?highlight=page%20size#faq-custom-config-file) for further information
 
 We are using `venv` to have a clean environment.
 
