@@ -138,8 +138,6 @@ def create_grid(grid):
     for i in range(1, config["nLines"] + 1):
         # calculate width and heigth based on imaginery distance
         width = np.arctan(sizePersonMax[0] / 2 / i) / alphaStart * sizePersonMax[0]
-        #height = np.arctan(sizePersonMax[1] / 2 / i) / alphaStart * sizePersonMax[1]
-        # width = np.arctan(sizePersonMax[0] / 2 / i) / alphaStart * sizePersonMax[0]
         height = width*config["imgRatio"]
 
         # append new line
@@ -189,7 +187,6 @@ def create_grid(grid):
         config["paperSize"][0] * 0.5 * cm_to_px,
         config["paperSize"][1] * 0.5 * cm_to_px,
     ]
-
 
     # create the final grid
     # the coordinates are in cm
