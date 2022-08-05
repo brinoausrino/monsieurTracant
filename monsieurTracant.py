@@ -18,7 +18,7 @@ time_delay_photo = 5
 run_params = {
     "scripts": True, 
     "print": False,
-    "mergedSvg": False
+    "mergedSvg": True
 }
 
 # folder to put files
@@ -44,8 +44,8 @@ config = {}
 
 # filter variables
 line_size = 11
-blur_value = 5
-
+blur_edge = 5
+blur_image = 8
 
 #########
 # functions
@@ -57,9 +57,13 @@ def set_line_size(x):
     line_size = x*2+3
 
 
-def set_blur_value(x):
-    global blur_value
-    blur_value = x*2+1
+def set_blur_edge(x):
+    global blur_edge
+    blur_edge = x*2+1
+
+def set_blur_image(x):
+    global blur_image
+    blur_image = x*2+1
 
 # filter edge detection
 def edge_mask(img, line_size, blur_value):
@@ -122,8 +126,10 @@ def create_grid(grid):
     # calculate the size and position for each line
     for i in range(1, config["nLines"] + 1):
         # calculate width and heigth based on imaginery distance
-        height = np.arctan(sizePersonMax[1] / 2 / i) / alphaStart * sizePersonMax[1]
         width = np.arctan(sizePersonMax[0] / 2 / i) / alphaStart * sizePersonMax[0]
+        #height = np.arctan(sizePersonMax[1] / 2 / i) / alphaStart * sizePersonMax[1]
+        # width = np.arctan(sizePersonMax[0] / 2 / i) / alphaStart * sizePersonMax[0]
+        height = width*config["imgRatio"]
 
         # append new line
         lines.append(
@@ -162,6 +168,18 @@ def create_grid(grid):
         else:
             elem["dx"] = lines[i - 1]["dx"] - elem["width"] * scaleY
 
+    # load or create Mask Image based on config dpi
+    cm_to_px = config["dpiMask"] / 2.54
+    w_mask = config["paperSize"][0] * cm_to_px
+    h_mask = config["paperSize"][1] * cm_to_px
+    
+    # calculate the center of the paper in px
+    center_px = [
+        config["paperSize"][0] * 0.5 * cm_to_px,
+        config["paperSize"][1] * 0.5 * cm_to_px,
+    ]
+
+
     # create the final grid
     # the coordinates are in cm
     # position coords are defined from center of the paper
@@ -170,6 +188,12 @@ def create_grid(grid):
             # get absolute coords
             x = line["dx"]
             y = line["dy"] - i * line["height"]
+
+            # calculate pixel coords
+            x_px = int(x*cm_to_px)
+            y_px = int(y*cm_to_px)
+            h_px = int(line["height"]*cm_to_px)
+            w_px = int(line["width"]*cm_to_px)
 
             # center coords to object
             x += 0.5 * line["width"]
@@ -183,41 +207,30 @@ def create_grid(grid):
             y -= ycenter
 
             grid.append(
-                {"height": line["height"], "width": line["width"], "x": x, "y": y}
-            )
-
-    # load or create Mask Image based on config dpi
-    cm_to_px = config["dpiMask"] / 2.54
-    w_mask = config["paperSize"][0] * cm_to_px
-    h_mask = config["paperSize"][1] * cm_to_px
-    
-    # calculate the center of the paper in px
-    center_px = [
-        config["paperSize"][0] * 0.5 * cm_to_px,
-        config["paperSize"][1] * 0.5 * cm_to_px,
-    ]
+                {"height": line["height"], "width": line["width"], "x": x, "y": y, "xPx": x_px, "yPx": y_px, "widthPx": w_px, "heightPx": h_px}
+            ) 
 
     # load or init mask image
     mask_img = cv2.imread(output_folder + "mask.bmp")
     if (
         mask_img is None
-        or mask_img.shape[0] != int(w_mask)
-        or mask_img.shape[1] != int(h_mask)
+        or mask_img.shape[1] != int(w_mask)
+        or mask_img.shape[0] != int(h_mask)
     ):
         mask_img = np.ones((int(h_mask), int(w_mask)), np.uint8) * 255
     else:
         mask_img = cv2.cvtColor(mask_img, cv2.COLOR_BGR2GRAY)
     
     # load or init preview image
-    preview_img = cv2.imread(output_folder + "test.bmp")
+    preview_img = cv2.imread(output_folder + "preview.bmp")
     if (
         preview_img is None
-        or preview_img.shape[0] != int(w_mask)
-        or preview_img.shape[1] != int(h_mask)
+        or preview_img.shape[1] != int(w_mask)
+        or preview_img.shape[0] != int(h_mask)
     ):
         preview_img = np.ones((int(h_mask), int(w_mask)), np.uint8) * 255
     else:
-        preview_img = cv2.cvtColor(mask_img, cv2.COLOR_BGR2GRAY)
+        preview_img = cv2.cvtColor(preview_img, cv2.COLOR_BGR2GRAY)
 
 
 # mask image, update image mask and export image to hpgl
@@ -235,21 +248,21 @@ def export_image(output_image, mask):
     # get size and position settings for current element
     elemSettings = grid[currentId]
 
-    # calculate scale factor for mask_img
-    scale = elemSettings["height"] / (output_image.shape[1] / cm_to_px)
-
     # rotate images
     output_image = cv2.rotate(output_image, cv2.ROTATE_90_COUNTERCLOCKWISE)
     mask = cv2.rotate(mask, cv2.ROTATE_90_COUNTERCLOCKWISE)
 
+    x_px = elemSettings["xPx"]
+    y_px = elemSettings["yPx"]
+    w_px = elemSettings["widthPx"]
+    h_px = elemSettings["heightPx"]
+
     # scale and translate mask for mask_img 
-    mask_scaled_size = (int(mask.shape[1]*scale), int(mask.shape[0]*scale))
+    mask_scaled_size = (w_px, h_px)
     mask = cv2.resize(mask, mask_scaled_size)
-    dx = int(center_px[0] - mask.shape[1] * 0.5 + elemSettings["x"] * cm_to_px)
-    dy = int(center_px[1] - mask.shape[0] * 0.5 + elemSettings["y"] * cm_to_px)
 
     # extract t_mask from mask_img to mask image
-    t_mask = mask_img[dy: dy + mask.shape[0], dx: dx + mask.shape[1]]
+    t_mask = mask_img[y_px: y_px + h_px, x_px: x_px + w_px]
     t_mask = cv2.resize(t_mask, (output_image.shape[1], output_image.shape[0]))
     t_mask = np.invert(t_mask)
     
@@ -258,14 +271,17 @@ def export_image(output_image, mask):
     output_image = np.maximum(output_image, t_mask)
 
     # create and show preview image
-    preview_img[dy: dy + mask.shape[0], dx: dx + mask.shape[1]] = np.minimum(
-        preview_img[dy: dy + mask.shape[0], dx: dx + mask.shape[1]], cv2.resize(output_image, mask_scaled_size)
+    # resize the output_image, merge it with matiching section of preview image 
+    # and insert merged image
+    preview_img[y_px: y_px + h_px, x_px: x_px + w_px] = np.minimum(
+        preview_img[y_px: y_px + h_px, x_px: x_px + w_px], 
+        cv2.resize(output_image, mask_scaled_size)
     )
     cv2.imshow("preview_img", preview_img)
 
     # update mask with current image
-    mask_img[dy: dy + mask.shape[0], dx: dx + mask.shape[1]] = np.minimum(
-        mask, mask_img[dy: dy + mask.shape[0], dx: dx + mask.shape[1]]
+    mask_img[y_px: y_px + h_px, x_px: x_px + w_px] = np.minimum(
+        mask, mask_img[y_px: y_px + h_px, x_px: x_px + w_px]
     )
 
     # export image and mask
@@ -336,7 +352,8 @@ selfie_segmentation = mp_selfie_segmentation.SelfieSegmentation(model_selection=
 # create openCV window with sliders for edge filter
 cv2.namedWindow("output")
 cv2.createTrackbar("line_size", "output", 2, 7, set_line_size)
-cv2.createTrackbar("blur_value", "output", 2, 7, set_blur_value)
+cv2.createTrackbar("blur_edge", "output", 2, 7, set_blur_edge)
+cv2.createTrackbar("blur_image", "output", 2, 20, set_blur_image)
 
 # create grid
 create_grid(grid)
@@ -383,7 +400,7 @@ while cap.isOpened():
     is_detected = False
     if faces.detections:
         is_detected = True
-        # bb = faces.detections[0].location_data.relative_bounding_box
+        bb = faces.detections[0].location_data.relative_bounding_box
         
         # get segmented image
         segmentation_bg = selfie_segmentation.process(image)
@@ -400,12 +417,23 @@ while cap.isOpened():
         
         # we use clahe filter that creates better results than simple historgram equalize (see below)
         clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
-        gray = clahe.apply(gray)
-        # gray = cv2.equalizeHist(gray)
-        cv2.imshow("hist", gray)
+        
+        # blur part around face
+        # todo : create circular mask with soft edges for soft blending
+        gray_blur = cv2.medianBlur(gray, blur_image)
+        
+        gray_blur.flags.writeable = True
+        bb_xmin = int(bb.xmin*gray_blur.shape[1])
+        bb_xmax = int((bb.xmin+bb.width)*gray_blur.shape[1])
+        bb_ymin = int(bb.ymin*gray_blur.shape[0])
+        bb_ymax = int((bb.ymin+bb.height)*gray_blur.shape[0])
+        gray_blur[bb_ymin: bb_ymax, bb_xmin: bb_xmax]= gray[bb_ymin: bb_ymax, bb_xmin: bb_xmax]
+
+        gray = clahe.apply(gray_blur)
+        cv2.imshow("gray", gray)
 
         # detect edges
-        edge = edge_mask(gray, line_size, blur_value)
+        edge = edge_mask(gray, line_size, blur_edge)
 
         # remove bg from edge image
         out = cv2.cvtColor(edge, cv2.COLOR_GRAY2BGR)
