@@ -45,7 +45,10 @@ config = {}
 # filter variables
 line_size = 11
 blur_edge = 5
+
 blur_image = 8
+circle_radius = 1.0
+circle_border = 56
 
 #########
 # functions
@@ -64,6 +67,14 @@ def set_blur_edge(x):
 def set_blur_image(x):
     global blur_image
     blur_image = x*2+1
+
+def set_circle_border(x):
+    global circle_border
+    circle_border = x*2+1
+
+def set_circle_radius(x):
+    global circle_radius
+    circle_radius = x/10
 
 # filter edge detection
 def edge_mask(img, line_size, blur_value):
@@ -351,9 +362,12 @@ selfie_segmentation = mp_selfie_segmentation.SelfieSegmentation(model_selection=
 
 # create openCV window with sliders for edge filter
 cv2.namedWindow("output")
+cv2.namedWindow("cam")
 cv2.createTrackbar("line_size", "output", 2, 7, set_line_size)
 cv2.createTrackbar("blur_edge", "output", 2, 7, set_blur_edge)
-cv2.createTrackbar("blur_image", "output", 2, 20, set_blur_image)
+cv2.createTrackbar("blur_image", "cam", 10, 40, set_blur_image)
+cv2.createTrackbar("circle_border", "cam", 22, 80, set_circle_border)
+cv2.createTrackbar("circle_radius", "cam", 10, 30, set_circle_radius)
 
 # create grid
 create_grid(grid)
@@ -415,22 +429,24 @@ while cap.isOpened():
         # equalize histogram for better contrasts
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         
-        # we use clahe filter that creates better results than simple historgram equalize (see below)
-        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
-        
         # blur part around face
         # todo : create circular mask with soft edges for soft blending
         gray_blur = cv2.medianBlur(gray, blur_image)
         
-        gray_blur.flags.writeable = True
-        bb_xmin = int(bb.xmin*gray_blur.shape[1])
-        bb_xmax = int((bb.xmin+bb.width)*gray_blur.shape[1])
-        bb_ymin = int(bb.ymin*gray_blur.shape[0])
-        bb_ymax = int((bb.ymin+bb.height)*gray_blur.shape[0])
-        gray_blur[bb_ymin: bb_ymax, bb_xmin: bb_xmax]= gray[bb_ymin: bb_ymax, bb_xmin: bb_xmax]
+        #gray_blur.flags.writeable = True
+        circular_mask = np.zeros(gray.shape, dtype=np.uint8)
+        c_x = int((bb.xmin + 0.5*bb.width)*gray.shape[1])
+        c_y = int((bb.ymin + 0.5*bb.height)*gray.shape[0])
+        r = int(max(bb.height*gray.shape[0], bb.width*gray.shape[1])*0.5*circle_radius)
+        cv2.circle(circular_mask, (c_x, c_y), r, (255), thickness = -1)
+        circular_mask = cv2.GaussianBlur(circular_mask, (circle_border, circle_border), 0)
 
-        gray = clahe.apply(gray_blur)
-        cv2.imshow("gray", gray)
+        gray = np.uint8(gray * (circular_mask / 255)+ gray_blur * (1 - (circular_mask / 255)))
+
+        # we use clahe filter that creates better results than simple historgram equalize (see below)
+        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+        gray = clahe.apply(gray)
+        cv2.imshow("cam", gray)
 
         # detect edges
         edge = edge_mask(gray, line_size, blur_edge)
