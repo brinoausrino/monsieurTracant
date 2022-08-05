@@ -430,18 +430,15 @@ while cap.isOpened():
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         
         # blur part around face
-        # todo : create circular mask with soft edges for soft blending
         gray_blur = cv2.medianBlur(gray, blur_image)
-        
-        #gray_blur.flags.writeable = True
         circular_mask = np.zeros(gray.shape, dtype=np.uint8)
         c_x = int((bb.xmin + 0.5*bb.width)*gray.shape[1])
         c_y = int((bb.ymin + 0.5*bb.height)*gray.shape[0])
         r = int(max(bb.height*gray.shape[0], bb.width*gray.shape[1])*0.5*circle_radius)
-        cv2.circle(circular_mask, (c_x, c_y), r, (255), thickness = -1)
+        cv2.circle(circular_mask, (c_x, c_y), r, (255), thickness=-1)
         circular_mask = cv2.GaussianBlur(circular_mask, (circle_border, circle_border), 0)
 
-        gray = np.uint8(gray * (circular_mask / 255)+ gray_blur * (1 - (circular_mask / 255)))
+        gray = np.uint8(gray * (circular_mask / 255) + gray_blur * (1 - (circular_mask / 255)))
 
         # we use clahe filter that creates better results than simple historgram equalize (see below)
         clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
