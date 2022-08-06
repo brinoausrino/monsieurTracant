@@ -42,6 +42,9 @@ cm_to_px = 1
 center_px = [0, 0]
 config = {}
 
+f = open("hardwareConfig.json")
+hardware_config = json.load(f)
+
 # filter variables
 line_size = 11
 blur_edge = 5
@@ -247,6 +250,7 @@ def export_image(output_image, mask):
     global mask_img
     global preview_img
     global config
+    global hardware_config
 
     # get current position in grid from counter.json
     f = open("counter.json")
@@ -333,7 +337,7 @@ def export_image(output_image, mask):
 
     # print hpgl
     if run_params["print"]:  
-        bashCommand = "python hp7475a_send.py " + output_folder + str(currentId) + "_scaled.hpgl -p /dev/ttyUSB0"
+        bashCommand = "python hp7475a_send.py " + output_folder + str(currentId) + "_scaled.hpgl -p " + hardware_config["plotterSerial"]
         process = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
         output, error = process.communicate()
 
@@ -370,7 +374,7 @@ cv2.createTrackbar("circle_radius", "cam", 10, 30, set_circle_radius)
 create_grid(grid)
 
 # select capture device
-cap = cv2.VideoCapture(2)
+cap = cv2.VideoCapture(hardware_config["camId"])
 
 # capture loop
 while cap.isOpened():
