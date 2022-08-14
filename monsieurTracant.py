@@ -53,9 +53,26 @@ blur_image = 8
 circle_radius = 1.0
 circle_border = 56
 
+#rotation of cam image
+cam_img_rotate = 1 # start with 90° counterclockwise. press R to rotate
+img_rotater = ["",cv2.ROTATE_90_COUNTERCLOCKWISE,cv2.ROTATE_180,cv2.ROTATE_90_CLOCKWISE]
+
+# fps counter
+show_fps = False
+
 #########
 # functions
 #########
+def show_usage():
+    print("    /|    //| |                                                      /__  ___/                                                 ")
+    print("   //|   // | |     ___       __      ___     ( )  ___      __         / /   __      ___      ___      ___       __    __  ___ ")
+    print("  // |  //  | |   //   ) ) //   ) ) ((   ) ) / / //___) ) //  ) )     / /  //  ) ) //   ) ) //   ) ) //   ) ) //   ) )  / /    ")
+    print(" //  | //   | |  //   / / //   / /   \ \    / / //       //          / /  //      //   / / //       //   / / //   / /  / /     ")
+    print("//   |//    | | ((___/ / //   / / //   ) ) / / ((____   //          / /  //      ((___( ( ((____   ((___( ( //   / /  / /      ")
+    print("Press [p] for taking a picture")
+    print("Press [r] for rotating the cam - not functional yet")
+    print("Press [f] for a FPS counter in the console")
+    print("Press [ESC] to quit")
 
 # gui callback functions
 def set_line_size(x):
@@ -373,11 +390,16 @@ cv2.createTrackbar("circle_radius", "cam", 10, 30, set_circle_radius)
 # create grid
 create_grid(grid)
 
+#show usage/documentation in console
+show_usage()
+
 # select capture device
 cap = cv2.VideoCapture(hardware_config["camId"])
 
 # capture loop
 while cap.isOpened():
+    # count fps
+    start_time = time.time() # start time of the loop
 
     # read image
     success, image = cap.read()
@@ -387,8 +409,9 @@ while cap.isOpened():
 
     # the BGR image to RGB.
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-    # rotate image since camera is roted as well
-    image = cv2.rotate(image, cv2.ROTATE_90_COUNTERCLOCKWISE)
+    # rotate image since camera is rotated as well
+    if cam_img_rotate != 0:
+        image = cv2.rotate(image, img_rotater[cam_img_rotate])
 
     # init output image with zeros
     output_image = np.zeros(
@@ -398,7 +421,7 @@ while cap.isOpened():
 
     # calulate image ratio and resize image to config settings
     ratio = image.shape[0] / image.shape[1]
-    
+
     # landscape
     # image = cv2.resize(image, (int(config["resImg"] / ratio), config["resImg"]))
     
@@ -474,12 +497,23 @@ while cap.isOpened():
         # show output image
         cv2.imshow("output", output_image)
 
-    # click 'p' and start exporting and plotting
-    if cv2.waitKey(33) == ord("p") and is_detected:
+    k = cv2.waitKey(1) ## get last pressed key
+    # if key was 'p' then start exporting and plotting
+    if k == -1:
+        pass
+    elif k == ord("p") and is_detected:
         export_image(output_image, mask)
-
-    elif cv2.waitKey(5) & 0xFF == 27:
+    # if key was 'r' then rotate image
+    elif k == ord("r"):
+        cam_img_rotate=(cam_img_rotate+1)%4 ## select next rotation style (none, 90ccw,180,90cw)
+    # if key was 'f' then to show FPS counter in console
+    elif k == ord("f"):
+        show_fps = not show_fps
+    elif k & 0xFF == 27:
         break
+
+    if (show_fps):
+        print("FPS: ", 1.0 / (time.time() - start_time)) # FPS = 1 / time to process loop
 
 """
 
@@ -532,3 +566,4 @@ while cap.isOpened():
 
 
 cap.release()
+cv2.destroyAllWindows()
