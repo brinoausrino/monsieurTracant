@@ -5,6 +5,8 @@ import numpy as np
 import time
 import subprocess
 import json
+import shutil
+import os, datetime
 
 ##################
 # global variables
@@ -57,8 +59,8 @@ circle_border = 56
 cam_img_rotate = 1 # start with 90° counterclockwise. press R to rotate
 img_rotater = ["",cv2.ROTATE_90_COUNTERCLOCKWISE,cv2.ROTATE_180,cv2.ROTATE_90_CLOCKWISE]
 
-# fps counter
-show_fps = False
+show_fps = False # fps counter
+canvas_full = False # is the Canvas fully filled?
 
 #########
 # functions
@@ -70,6 +72,8 @@ def show_usage():
     print(" //  | //   | |  //   / / //   / /   \ \    / / //       //          / /  //      //   / / //       //   / / //   / /  / /     ")
     print("//   |//    | | ((___/ / //   / / //   ) ) / / ((____   //          / /  //      ((___( ( ((____   ((___( ( //   / /  / /      ")
     print("Press [p] for taking a picture")
+    print("Press [s] to start a new image after the current one was full")
+    print("Press [q] to force a reset and start drawing a new image ")
     print("Press [r] for rotating the cam - not functional yet")
     print("Press [f] for a FPS counter in the console")
     print("Press [ESC] to quit")
@@ -260,6 +264,50 @@ def create_grid(grid):
     else:
         preview_img = cv2.cvtColor(preview_img, cv2.COLOR_BGR2GRAY)
 
+def start_new_drawing():
+    # clean up all files from /out/ into a timestamped subfolder
+    target_dir = os.path.join(os.getcwd(),output_folder, datetime.datetime.now().strftime('%y%m%d_%H%M'))
+    os.makedirs(target_dir)
+    
+    file_names = os.listdir(output_folder)
+    
+    for file_name in file_names:
+        if "." in file_name: # move only files
+            shutil.move(os.path.join(output_folder+"/", file_name), target_dir)
+
+    # reset the mask and preview by creating a new grid
+    grid = []
+    create_grid(grid)
+
+    # reset the currentId JSON counter to 0
+    f = open("counter.json")
+    cf = json.load(f)
+    cf["currentId"] = 0
+    with open("counter.json", "w") as f:
+        json.dump(cf, f)
+
+def page_is_full():
+    # code for having a full page, currently happening 
+    # when counter.json has counterId > 37
+    # we check if the export_image call failed because of this issues
+    f = open("counter.json")
+    cf = json.load(f)
+    currentId = cf["currentId"]
+
+    # if this not the bug we will stop here
+    if currentId <= 36:
+        print("An exception occured during export_image function.")
+        return
+    
+    print("I have filled the paper completely.") 
+    print("I will now sign it and then you can place a new canvas in the plotter.")
+    print("Press [s] when you are ready.")
+    # otherwise the paper is fully filled and we should 
+    # (a) wait for a new paper to be inserted, prevent drawing in the mean time
+    canvas_full = True # this does not work if its only set inside this function. we set it before calling this function as well
+    
+    # (b) sign the document with an pre-made svg signature 
+    
 
 # mask image, update image mask and export image to hpgl
 def export_image(output_image, mask):
@@ -452,7 +500,7 @@ while cap.isOpened():
 
         # equalize histogram for better contrasts
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        
+
         # blur part around face
         gray_blur = cv2.medianBlur(gray, blur_image)
         circular_mask = np.zeros(gray.shape, dtype=np.uint8)
@@ -497,18 +545,34 @@ while cap.isOpened():
         # show output image
         cv2.imshow("output", output_image)
 
-    k = cv2.waitKey(1) ## get last pressed key
-    # if key was 'p' then start exporting and plotting
+    # get last pressed key
+    k = cv2.waitKey(1) 
     if k == -1:
         pass
-    elif k == ord("p") and is_detected:
-        export_image(output_image, mask)
+    # if key was 'p' then start exporting and plotting
+    elif k == ord("p") and is_detected and not canvas_full:
+        try:
+            export_image(output_image, mask)
+        except:
+            canvas_full = True # prevent further drawing till [s] is pressed
+            page_is_full()
     # if key was 'r' then rotate image
     elif k == ord("r"):
         cam_img_rotate=(cam_img_rotate+1)%4 ## select next rotation style (none, 90ccw,180,90cw)
     # if key was 'f' then to show FPS counter in console
     elif k == ord("f"):
         show_fps = not show_fps
+    # if key was 's' and  to show FPS counter in console    
+    elif k == ord("s"):
+        if canvas_full:
+            canvas_full = False
+            start_new_drawing()
+            print("I will now draw again. Thanks for the paper")
+        else:
+            print("The image was not full yet. I will continue drawing on the old one.")
+    elif k == ord("q"):
+        start_new_drawing()
+        print("Hey! I still wanted to paint that! Grrml. Ok i will start a new one.")
     elif k & 0xFF == 27:
         break
 
