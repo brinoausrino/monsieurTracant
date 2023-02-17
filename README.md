@@ -1,10 +1,20 @@
+# Monsieur Tracant 2
+
+based on:
+* person tracking, background subtraction : https://google.github.io/mediapipe/
+* conversion to line drawing : https://github.com/carolineec/informative-drawings
+* vectorization of line drawing : https://github.com/LingDong-/skeleton-tracing (swig-version)
+
+Thank you all!
+
+
 # Monsieur Tracant
 
 The well known robotic street artist.
 
-Requires Python 3.9+.
+Requires Conda.
 
-## Installation
+## Installation # deprecated
 
 (1) VPYPE
 First install [vpype](https://vpype.readthedocs.io/en/latest/install.html)
