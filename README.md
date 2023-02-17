@@ -1,6 +1,7 @@
 # Monsieur Tracant
 
-The well known robotic street artist.
+The well known robotic street artist. 
+Version 2022 - group portrait
 
 Requires Python 3.9+.
 
