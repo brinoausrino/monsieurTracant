@@ -7,7 +7,7 @@ import re
 parser = argparse.ArgumentParser()
 parser.add_argument('file', type=str)
 parser.add_argument('--out', default="", type=str,
-                    help='sum the integers (default: find the max)')
+                    help='output file')
 args = parser.parse_args()
 
 out = args.file
@@ -21,16 +21,21 @@ with open(args.file, 'r') as file:
     data = file.read()
     
     # Searching and replacing the text
-    r = re.findall('SP\\d;',data)
+    r = re.findall('SP\\d;', data)
     for exp in r:
         data = data.replace(exp, "")
 
-         # Searching and replacing the text
-    r2 = re.findall('PS\\d;',data)
+    # Searching and replacing the text
+    r2 = re.findall('PS\\d;', data)
     for exp in r2:
         data = data.replace(exp, "")
 
-    
+    # move to top left
+    r3 = re.findall(";IN;", data)
+    for exp in r3:
+        data = data.replace(exp, ";PU0,-12433;PD0,-12233;IN;")
+
+ 
   
 # Opening our text file in write only
 # mode to write the replaced content

@@ -54,3 +54,6 @@ Thumbs.db
 
 # settings
 config.json
+
+# assets
+out/*

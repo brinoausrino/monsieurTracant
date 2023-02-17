@@ -7,6 +7,13 @@ import subprocess
 import json
 import shutil
 import os, datetime
+import serial
+
+ser = 0
+try:
+    ser = serial.Serial('/dev/ttyACM0',9600, timeout=1)
+except:
+    print("LED not available") 
 
 ##################
 # global variables
@@ -14,12 +21,13 @@ import os, datetime
 
 # person detection and automatic drawing
 time_last_detection = time.time()
-time_delay_photo = 5
+time_delay_photo = 8
+autodraw = False
 
 # script options
 run_params = {
     "scripts": True, 
-    "print": False,
+    "print": True,
     "mergedSvg": True
 }
 
@@ -39,6 +47,9 @@ preview_img = {}
 # background image for image subtraction
 bg_image = None
 
+# face detection and autodraw
+is_face_detected = False
+
 # calculation and config params
 cm_to_px = 1
 center_px = [0, 0]
@@ -54,13 +65,14 @@ blur_edge = 5
 blur_image = 8
 circle_radius = 1.0
 circle_border = 56
+clip_limit = 2
 
-#rotation of cam image
-cam_img_rotate = 1 # start with 90° counterclockwise. press R to rotate
-img_rotater = ["",cv2.ROTATE_90_COUNTERCLOCKWISE,cv2.ROTATE_180,cv2.ROTATE_90_CLOCKWISE]
+# rotation of cam image
+cam_img_rotate = 1  # start with 90° counterclockwise. press R to rotate
+img_rotater = ["", cv2.ROTATE_90_COUNTERCLOCKWISE, cv2.ROTATE_180, cv2.ROTATE_90_CLOCKWISE]
 
-show_fps = False # fps counter
-canvas_full = False # is the Canvas fully filled?
+show_fps = False  # fps counter
+canvas_full = False  # is the Canvas fully filled?
 
 #########
 # functions
@@ -76,6 +88,7 @@ def show_usage():
     print("Press [q] to force a reset and start drawing a new image ")
     print("Press [r] for rotating the cam - not functional yet")
     print("Press [f] for a FPS counter in the console")
+    print("Press [g] for export a test grid as svg")
     print("Press [ESC] to quit")
 
 # gui callback functions
@@ -100,6 +113,10 @@ def set_circle_radius(x):
     global circle_radius
     circle_radius = x/10
 
+def set_clip_limit(x):
+    global clip_limit
+    clip_limit = x
+
 # filter edge detection
 def edge_mask(img, line_size, blur_value):
 
@@ -113,6 +130,18 @@ def edge_mask(img, line_size, blur_value):
         blur_value,
     )
     return edges
+
+# filter edge detection
+def pencil_sketch(img, line_size, blur_value):
+
+    # invert
+    img_invert = cv2.bitwise_not(img)
+    # blur
+    img_smoothing = cv2.GaussianBlur(img_invert, (blur_value*2+1, blur_value*2+1), sigmaX=0, sigmaY=0)
+    # subtract
+    final = cv2.divide(img, 255 - img_smoothing, scale=255)
+    final, mask = cv2.threshold(final, 220, 255, cv2.THRESH_BINARY)
+    return final
 
 # creates person grid based on config file
 # some calculations me be confuding, since the final image is rotated 90°
@@ -367,6 +396,7 @@ def export_image(output_image, mask):
     cv2.imwrite(output_folder + str(currentId) + ".bmp", output_image)
 
     # run vpype scripts to trace image, position on paper, export as hpgl and plot
+    ser.write('h'.encode())
     if run_params["scripts"]:
         # trace
         bashCommand = "sh 0_trace_image.sh " + output_folder + str(currentId)
@@ -411,6 +441,27 @@ def export_image(output_image, mask):
     with open("counter.json", "w") as f:
         json.dump(cf, f)
 
+def export_test_grid():
+
+    for count, elemSettings in enumerate(grid):
+
+        print("exporting " + str(count+1) + " / " + str(len(grid)))
+
+    # place vector image on paper
+        bashCommand = (
+            "sh 5_create_test_grid.sh " + output_folder + "singleGrid "
+            + str(elemSettings["width"])
+            + "cm "
+            + str(elemSettings["height"])
+            + "cm "
+            + str(elemSettings["x"])
+            + "cm "
+            + str(elemSettings["y"])
+            + "cm"
+        )
+        process = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
+        output, error = process.communicate()
+
 
 ##############
 # main script
@@ -434,6 +485,7 @@ cv2.createTrackbar("blur_edge", "output", 2, 7, set_blur_edge)
 cv2.createTrackbar("blur_image", "cam", 10, 40, set_blur_image)
 cv2.createTrackbar("circle_border", "cam", 22, 80, set_circle_border)
 cv2.createTrackbar("circle_radius", "cam", 10, 30, set_circle_radius)
+cv2.createTrackbar("clip_limit", "cam", 1, 30, set_clip_limit)
 
 # create grid
 create_grid(grid)
@@ -483,9 +535,11 @@ while cap.isOpened():
     faces = face_detection.process(image)
 
     # continue if face detected
-    is_detected = False
     if faces.detections:
-        is_detected = True
+        if not is_face_detected:
+            time_last_detection = time.time()
+
+        is_face_detected = True
         bb = faces.detections[0].location_data.relative_bounding_box
         
         # get segmented image
@@ -513,12 +567,13 @@ while cap.isOpened():
         gray = np.uint8(gray * (circular_mask / 255) + gray_blur * (1 - (circular_mask / 255)))
 
         # we use clahe filter that creates better results than simple historgram equalize (see below)
-        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+        clahe = cv2.createCLAHE(clipLimit=clip_limit, tileGridSize=(8, 8))
         gray = clahe.apply(gray)
-        cv2.imshow("cam", gray)
+        cv2.imshow("cam2", gray)
 
         # detect edges
         edge = edge_mask(gray, line_size, blur_edge)
+        #edge = pencil_sketch(gray, line_size, blur_edge)
 
         # remove bg from edge image
         out = cv2.cvtColor(edge, cv2.COLOR_GRAY2BGR)
@@ -544,13 +599,26 @@ while cap.isOpened():
 
         # show output image
         cv2.imshow("output", output_image)
+    else:
+        is_face_detected = False
+
+
+    # autodraw
+    if autodraw and is_face_detected and time.time() - time_last_detection > time_delay_photo:
+        try:
+            export_image(output_image, mask)
+        except:
+            canvas_full = True # prevent further drawing till [s] is pressed
+            page_is_full()
+
+        time_last_detection = time.time()
 
     # get last pressed key
     k = cv2.waitKey(1) 
     if k == -1:
         pass
     # if key was 'p' then start exporting and plotting
-    elif k == ord("p") and is_detected and not canvas_full:
+    elif k == ord("p") and not canvas_full:
         try:
             export_image(output_image, mask)
         except:
@@ -573,6 +641,12 @@ while cap.isOpened():
     elif k == ord("q"):
         start_new_drawing()
         print("Hey! I still wanted to paint that! Grrml. Ok i will start a new one.")
+    elif k == ord("g"):
+        print("I guess I'll export only a grid for now.")
+        export_test_grid()
+    elif k == ord("a"):
+        print("I guess I'll export only a grid for now.")
+        export_test_grid()
     elif k & 0xFF == 27:
         break
 

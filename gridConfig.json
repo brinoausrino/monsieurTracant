@@ -1,7 +1,7 @@
 {
-    "nLines":8,
-    "nPersonsFront":6,
-    "nPersonsBack":15,
+    "nLines":3,
+    "nPersonsFront":4,
+    "nPersonsBack":4,
     "marginInfo":["top","right","bottom","left in cm"],
     "margin":    [4,     4,      4,        4],
     "paperSize": [70,90],

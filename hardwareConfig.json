@@ -1,4 +1,5 @@
 {
-    "camId":0,
-    "plotterSerial":"/dev/ttyUSB0"
+    "camId":2,
+    "plotterSerial":"/dev/ttyUSB0",
+    "ledSerial":"/dev/ttyACM0"
 }
