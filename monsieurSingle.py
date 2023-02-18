@@ -8,15 +8,14 @@ import time
 import subprocess
 import json
 import shutil
-import os, datetime
+import os
+import datetime
 import serial
 import math
-import informativeDrawings
-import trace_skeleton
+from informativeDrawings import informativeDrawings
+from traceSkeleton import trace_skeleton
 import gridCreation
 import image_operations
-
-
 
 
 ##################
@@ -83,9 +82,9 @@ canvas_full = False  # is the Canvas fully filled?
 
 ser = 0
 try:
-    ser = serial.Serial('/dev/ttyACM0',9600, timeout=1)
+    ser = serial.Serial('/dev/ttyACM0', 9600, timeout=1)
 except:
-    print("LED not available") 
+    print("LED not available")
 
 
 #########
@@ -150,13 +149,13 @@ def set_threshold_line2(x):
 
 def start_new_drawing():
     # clean up all files from /out/ into a timestamped subfolder
-    target_dir = os.path.join(os.getcwd(),config["outputFolder"], datetime.datetime.now().strftime('%y%m%d_%H%M'))
+    target_dir = os.path.join(os.getcwd(), config["outputFolder"], datetime.datetime.now().strftime('%y%m%d_%H%M'))
     os.makedirs(target_dir)
-    
+
     file_names = os.listdir(config["outputFolder"])
-    
+
     for file_name in file_names:
-        if "." in file_name: # move only files
+        if "." in file_name:  # move only files
             shutil.move(os.path.join(config["outputFolder"]+"/", file_name), target_dir)
 
     # reset the mask and preview by creating a new grid
@@ -171,7 +170,7 @@ def start_new_drawing():
         json.dump(cf, f)
 
 def page_is_full():
-    # code for having a full page, currently happening 
+    # code for having a full page, currently happening
     # when counter.json has counterId > 37
     # we check if the export_image call failed because of this issues
     f = open("counter.json")
@@ -182,16 +181,16 @@ def page_is_full():
     if currentId <= 36:
         print("An exception occured during export_image function.")
         return
-    
-    print("I have filled the paper completely.") 
+
+    print("I have filled the paper completely.")
     print("I will now sign it and then you can place a new canvas in the plotter.")
     print("Press [s] when you are ready.")
-    # otherwise the paper is fully filled and we should 
+    # otherwise the paper is fully filled and we should
     # (a) wait for a new paper to be inserted, prevent drawing in the mean time
-    canvas_full = True # this does not work if its only set inside this function. we set it before calling this function as well
-    
-    # (b) sign the document with an pre-made svg signature 
-    
+    canvas_full = True  # this does not work if its only set inside this function. we set it before calling this function as well
+
+    # (b) sign the document with an pre-made svg signature
+
 
 # mask image, update image mask and export image to hpgl
 def export_image(output_image, mask):
@@ -217,7 +216,7 @@ def export_image(output_image, mask):
     w_px = elemSettings["widthPx"]
     h_px = elemSettings["heightPx"]
 
-    # scale and translate mask for mask_img 
+    # scale and translate mask for mask_img
     mask_scaled_size = (w_px, h_px)
     mask = cv2.resize(mask, mask_scaled_size)
 
@@ -225,16 +224,16 @@ def export_image(output_image, mask):
     t_mask = mask_img[y_px: y_px + h_px, x_px: x_px + w_px]
     t_mask = cv2.resize(t_mask, (output_image.shape[1], output_image.shape[0]))
     t_mask = np.invert(t_mask)
-    
+
     # convert output image to grayscale and mask it
     output_image = cv2.cvtColor(output_image, cv2.COLOR_BGR2GRAY)
     output_image = np.maximum(output_image, t_mask)
 
     # create and show preview image
-    # resize the output_image, merge it with matiching section of preview image 
+    # resize the output_image, merge it with matiching section of preview image
     # and insert merged image
     preview_img[y_px: y_px + h_px, x_px: x_px + w_px] = np.minimum(
-        preview_img[y_px: y_px + h_px, x_px: x_px + w_px], 
+        preview_img[y_px: y_px + h_px, x_px: x_px + w_px],
         cv2.resize(output_image, mask_scaled_size)
     )
     cv2.imshow("preview_img", preview_img)
@@ -285,7 +284,7 @@ def export_image(output_image, mask):
         output, error = process.communicate()
 
     # print hpgl
-    if run_params["print"]:  
+    if run_params["print"]:
         bashCommand = "python hp7475a_send.py " + config["outputFolder"] + str(currentId) + "_scaled.hpgl -p " + config["hardware"]["plotterSerial"]
         process = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
         output, error = process.communicate()
@@ -296,11 +295,9 @@ def export_image(output_image, mask):
         json.dump(cf, f)
 
 
-
 ##############
 # main script
 ##############
-
 # init mediapipe detectors for face and background subtraction
 mp_drawing = mp.solutions.drawing_utils
 mp_selfie_segmentation = mp.solutions.selfie_segmentation
@@ -314,23 +311,21 @@ selfie_segmentation = mp_selfie_segmentation.SelfieSegmentation(model_selection=
 # create openCV window with sliders for edge filter
 cv2.namedWindow("output")
 cv2.namedWindow("cam")
-#cv2.createTrackbar("line_size", "output", 2, 7, set_line_size)
-#cv2.createTrackbar("blur_edge", "output", 2, 7, set_blur_edge)
+
 cv2.createTrackbar("blur_image", "cam", 10, 40, set_blur_image)
 cv2.createTrackbar("circle_border", "cam", 22, 80, set_circle_border)
 cv2.createTrackbar("circle_radius", "cam", 10, 30, set_circle_radius)
-cv2.createTrackbar("clip_limit", "cam", 1, 30, set_clip_limit)
 
-cv2.namedWindow("bg")
-cv2.createTrackbar("d_line", "bg", 5, 100, set_d_line)
-cv2.createTrackbar("angle_line", "bg", 0, 180, set_angle_line)
-cv2.createTrackbar("threshold", "bg", 10, 245, set_threshold_line)
-cv2.createTrackbar("threshold2", "bg", 40, 245, set_threshold_line2)
+cv2.namedWindow("output")
+cv2.createTrackbar("d_line", "output", 5, 100, set_d_line)
+cv2.createTrackbar("angle_line", "output", 0, 180, set_angle_line)
+cv2.createTrackbar("threshold", "output", 10, 245, set_threshold_line)
+cv2.createTrackbar("threshold2", "output", 40, 245, set_threshold_line2)
 
 # init info drawings
-#opt = informativeDrawings.Options()
-#opt.dataroot = "test.png"
-#informativeDrawings.init_nn(opt)
+# opt = informativeDrawings.Options()
+# opt.dataroot = "test.png"
+# informativeDrawings.init_nn(opt)
 
 # create grid
 layout = gridCreation.create_single(config)
@@ -344,7 +339,7 @@ cap = cv2.VideoCapture(config["hardware"]["camId"])
 # capture loop
 while cap.isOpened():
     # count fps
-    start_time = time.time() # start time of the loop
+    start_time = time.time()  # start time of the loop
 
     # read image
     success, image = cap.read()
@@ -360,7 +355,7 @@ while cap.isOpened():
 
     # init output image with zeros
     output_image = np.zeros(
-        (layout["grid"][0]["heightPx"],layout["grid"][0]["widthPx"], 3),np.uint8,)
+        (layout["grid"][0]["heightPx"], layout["grid"][0]["widthPx"], 3), np.uint8,)
 
     # calulate image ratio and resize image to config settings
     ratio = image.shape[0] / image.shape[1]
@@ -369,7 +364,7 @@ while cap.isOpened():
     # image = cv2.resize(image, (int(config["resImg"] / ratio), config["resImg"]))
 
     # portrait
-    image = cv2.resize(image, (int(config["layout"]["resImg"]/ ratio),config["layout"]["resImg"]))
+    image = cv2.resize(image, (int(config["layout"]["resImg"] / ratio), config["layout"]["resImg"]))
 
     # set not writable for more performance
     image.flags.writeable = False
@@ -383,7 +378,6 @@ while cap.isOpened():
             time_last_detection = time.time()
 
         is_face_detected = True
-        bb = faces.detections[0].location_data.relative_bounding_box
 
         # get segmented image
         segmentation_bg = selfie_segmentation.process(image)
@@ -400,26 +394,27 @@ while cap.isOpened():
             bg_image_inv[:] = (0, 0, 0)
 
         # equalize histogram for better contrasts
-        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        out = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
         # blur part around face
-        gray_blur = cv2.medianBlur(gray, blur_image)
-        circular_mask = np.zeros(gray.shape, dtype=np.uint8)
-        c_x = int((bb.xmin + 0.5*bb.width)*gray.shape[1])
-        c_y = int((bb.ymin + 0.5*bb.height)*gray.shape[0])
-        r = int(max(bb.height*gray.shape[0], bb.width*gray.shape[1])*0.5*circle_radius)
-        cv2.circle(circular_mask, (c_x, c_y), r, (255), thickness=-1)
+        out_blur = cv2.medianBlur(out, blur_image)
+        circular_mask = np.zeros(out.shape, dtype=np.uint8)
+
+        for face in faces.detections:
+            bb = face.location_data.relative_bounding_box
+            c_x = int((bb.xmin + 0.5*bb.width)*out.shape[1])
+            c_y = int((bb.ymin + 0.5*bb.height)*out.shape[0])
+            r = int(max(bb.height*out.shape[0], bb.width*out.shape[1])*0.5*circle_radius)
+            cv2.circle(circular_mask, (c_x, c_y), r, (255,255,255), thickness=-1)
+
         circular_mask = cv2.GaussianBlur(circular_mask, (circle_border, circle_border), 0)
+        circular_mask = circular_mask/255
 
-        gray = np.uint8(gray * (circular_mask / 255) + gray_blur * (1 - (circular_mask / 255)))
-
-
+        out =  (out * circular_mask + out_blur * (1 - circular_mask)).astype(np.uint8)
 
         # remove bg from edge image
-        out = cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR)
         output_image = np.where(condition, out, bg_image)
         output_image_inv = np.where(condition, out, bg_image_inv)
-        
 
         # create a mask to dstinct back and foreground
         mask = np.where(condition, image, bg_image)
@@ -431,19 +426,18 @@ while cap.isOpened():
     else:
         is_face_detected = False
 
-
     # autodraw
     if autodraw and is_face_detected and time.time() - time_last_detection > time_delay_photo:
         try:
             export_image(output_image, mask)
         except:
-            canvas_full = True # prevent further drawing till [s] is pressed
+            canvas_full = True  # prevent further drawing till [s] is pressed
             page_is_full()
 
         time_last_detection = time.time()
 
     # get last pressed key
-    k = cv2.waitKey(1) 
+    k = cv2.waitKey(1)
     if k == -1:
         pass
     # if key was 'p' then start exporting and plotting
@@ -451,15 +445,15 @@ while cap.isOpened():
         try:
             export_image(output_image, mask)
         except:
-            canvas_full = True # prevent further drawing till [s] is pressed
+            canvas_full = True  # prevent further drawing till [s] is pressed
             page_is_full()
     # if key was 'r' then rotate image
     elif k == ord("r"):
-        cam_img_rotate=(cam_img_rotate+1)%4 ## select next rotation style (none, 90ccw,180,90cw)
+        cam_img_rotate = (cam_img_rotate+1) % 4  # select next rotation style (none, 90ccw,180,90cw)
     # if key was 'f' then to show FPS counter in console
     elif k == ord("f"):
         show_fps = not show_fps
-    # if key was 's' and  to show FPS counter in console    
+    # if key was 's' and  to show FPS counter in console
     elif k == ord("s"):
         if canvas_full:
             canvas_full = False
@@ -471,23 +465,45 @@ while cap.isOpened():
         start_new_drawing()
         print("Hey! I still wanted to paint that! Grrml. Ok i will start a new one.")
     elif k == ord("l"):
+        
         lines = image_operations.extract_contours(output_image)
-        thresh = image_operations.hatch_area(output_image_inv,threshold_line, invert_image = True)
-        thresh2 = image_operations.hatch_area(output_image_inv,threshold_line2, 135, invert_image = True)
+        
+        # white bg
+        threshI = image_operations.hatch_area(output_image,threshold_line,angle_line,d_line)
+        thresh2I = image_operations.hatch_area(output_image, threshold_line2, (angle_line+90)%180,d_line)
+        output_image[:] = 255
+        output_image = image_operations.create_preview_from_polys(threshI, output_image, (50, 50, 50))
+        output_image = image_operations.create_preview_from_polys(thresh2I, output_image, (50, 50, 50))
+        output_image = image_operations.create_preview_from_polys(lines, output_image, (0, 0, 0))
+        cv2.imshow("output2", output_image)
+        
 
+        # gray bg
+        thresh = image_operations.hatch_area(output_image_inv, threshold_line,angle_line,d_line, invert_image=True)
+        thresh2 = image_operations.hatch_area(output_image_inv, threshold_line2, (angle_line+90)%180,d_line, invert_image=True)
         output_image[:] = 30
-        output_image = image_operations.create_preview_from_polys( thresh,output_image,(180,180,180))
-        output_image = image_operations.create_preview_from_polys( thresh2,output_image,(180,180,180))
-        output_image = image_operations.create_preview_from_polys(lines, output_image,(255,255,255))
-
-        #thresh = cv2.bitwise_and(thresh,thresh2)
-
-        cv2.imshow("lines", output_image)
+        output_image = image_operations.create_preview_from_polys(thresh, output_image, (180, 180, 180))
+        output_image = image_operations.create_preview_from_polys(thresh2, output_image, (180, 180, 180))
+        output_image = image_operations.create_preview_from_polys(lines, output_image, (255, 255, 255))
+        cv2.imshow("output", output_image)
+        
+        
+        # blue red hatching
+        r, g, b    = output_image_inv[:, :, 0], output_image_inv[:, :, 1], output_image_inv[:, :, 2]
+        red = image_operations.hatch_area(r, threshold_line,angle_line,d_line, invert_image=True)
+        blue = image_operations.hatch_area(b, threshold_line2, (angle_line+90)%180,d_line, invert_image=True)
+        output_image[:] = 30
+        output_image = image_operations.create_preview_from_polys(red, output_image, (255,0,0))
+        output_image = image_operations.create_preview_from_polys(blue, output_image, (0, 0, 255))
+        output_image = image_operations.create_preview_from_polys(lines, output_image, (255, 255, 255))
+        cv2.imshow("output3", output_image)
+        
+        
     elif k & 0xFF == 27:
         break
 
     if (show_fps):
-        print("FPS: ", 1.0 / (time.time() - start_time)) # FPS = 1 / time to process loop
+        print("FPS: ", 1.0 / (time.time() - start_time))  # FPS = 1 / time to process loop
 
 
 cap.release()

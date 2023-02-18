@@ -1,6 +1,6 @@
 import cv2
-import informativeDrawings
-import trace_skeleton
+from informativeDrawings import informativeDrawings
+from traceSkeleton import trace_skeleton
 import numpy as np
 from scipy import ndimage
 import math
@@ -25,7 +25,7 @@ def extract_contours(img,render_quality = 768, export_preview = False):
     informativeDrawings.proceed_conversion(inf_drawings)
 
     # load proceeded image
-    preview_img = cv2.imread("results/contour_style/inf_drawings_t_out.png", 0)
+    preview_img = cv2.imread("informativeDrawings/results/contour_style/inf_drawings_t_out.png", 0)
     preview_img = cv2.resize(preview_img, (img.shape[1],img.shape[0]))
     preview_img = cv2.bitwise_not(preview_img)
 
@@ -39,11 +39,16 @@ def extract_contours(img,render_quality = 768, export_preview = False):
 
 def hatch_area(img, threshold = 128, angle_lines = 45, d_lines = 20, w_lines=3, invert_image = False, export_preview = False):
     # load and threshold image
-    preview_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    preview_img = None
+    if img.ndim == 2:
+        preview_img = img
+    else:
+        preview_img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+
     if not invert_image:
         preview_img = cv2.bitwise_not(preview_img)
     _,preview_img = cv2.threshold(preview_img,threshold,255,cv2.THRESH_BINARY)
-
+    
     # create hatch pattern
     w_pattern = int(math.sqrt(max(preview_img.shape[0],preview_img.shape[1]) ** 2 / 2)*2)
     pattern = np.zeros((w_pattern,w_pattern, 1),np.uint8,)

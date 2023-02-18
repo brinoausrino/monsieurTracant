@@ -10,18 +10,20 @@ from torch.utils.data import DataLoader
 from torch.autograd import Variable
 import torch
 
-from model import Generator, GlobalGenerator2, InceptionV3
-from dataset import UnpairedDepthDataset
+from .model import Generator,GlobalGenerator2,InceptionV3
+
+#from model import Generator, GlobalGenerator2, InceptionV3
+from .dataset import UnpairedDepthDataset
 from PIL import Image
 import numpy as np
-from utils import channel2width
+from .utils import channel2width
 
 
 class Options:
     def __init__(self):
         self.name = "contour_style"
-        self.checkpoints_dir = "checkpoints"
-        self.results_dir = "results"
+        self.checkpoints_dir = "informativeDrawings/checkpoints"
+        self.results_dir = "informativeDrawings/results"
         self.geom_name = "feats2Geom"
         self.batchSize=1
         self.dataroot = ""
@@ -83,7 +85,7 @@ def init_nn(opt):
             net_GB.cuda()
             net_GB.load_state_dict(torch.load(os.path.join(opt.checkpoints_dir, opt.name, 'netG_B_%s.pth' % opt.which_epoch)))
             net_GB.eval()
-        
+
         netGeom = 0
         if opt.predict_depth == 1:
             usename = opt.name
@@ -96,7 +98,7 @@ def init_nn(opt):
             netGeom.cuda()
             netGeom.eval()
 
-            numclasses = opt.num_classes
+            # numclasses = opt.num_classes
             ### load pretrained inception
             net_recog = InceptionV3(opt.num_classes, False, use_aux=True, pretrain=True, freeze=True, every_feat=opt.every_feat==1)
             net_recog.cuda()
@@ -109,15 +111,13 @@ def init_nn(opt):
         # Set model's test mode
         net_G.eval()
 
-        
-        
 
 
 def proceed_conversion(opt):
     global net_G
     global net_GB
     global netGeom
-    
+
     with torch.no_grad():
         transforms_r = [transforms.Resize(int(opt.size), Image.BICUBIC),
                     transforms.ToTensor()]

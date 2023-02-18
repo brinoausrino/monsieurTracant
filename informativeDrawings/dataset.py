@@ -9,11 +9,11 @@ from PIL import Image
 import numpy as np
 import os
 from collections import OrderedDict
-import util.util as util
+import informativeDrawings.util.util as util
 import cv2
 
 from PIL import Image
-from base_dataset import BaseDataset, get_params, get_transform
+from .base_dataset import BaseDataset, get_params, get_transform
 import json
 
 IMG_EXTENSIONS = ['.jpg', '.JPG', '.jpeg', '.JPEG', '.png', '.PNG']
