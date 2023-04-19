@@ -3,5 +3,8 @@
     "python.linting.enabled": true,
     "python.linting.pylintEnabled": false,
     "python.formatting.provider": "black",
-    "editor.defaultFormatter": "ms-python.autopep8"
+    "editor.defaultFormatter": "ms-python.autopep8",
+    "[json]": {
+        "editor.defaultFormatter": "vscode.json-language-features"
+    }
 }

@@ -55,3 +55,44 @@ final_pu_params = "0,0"             # (optional) if present, specifies parameter
 info = "Paper loading..."           # (optional) human-readable information on how the
                                     # paper must be loaded for this configuration to work
                                     # as expected
+
+[[device.hp7576a.paper]]
+name = "A3"                          # name of the paper format
+aka_names = ["a3"]
+
+paper_size = ["297mm","420mm"]      # (optional) physical paper size / CAUTION: order must
+                                    # respect the native X/Y axis orientation of the plotter
+                                    # unless paper_orientation is specified
+                                    # Note: may be omitted if the plotter support arbitrary
+                                    # paper size
+
+paper_orientation = "landscape"      # (optional) "portrait" or "landscape"
+                                    # specify the orientation of the plotter  coordinate
+                                    # system on the page ("landscape" means the X axis is
+                                    # along the long edge)
+
+origin_location = ["210mm", "149mm"]   # physical location from the page's top-left corner of
+                                    # the (0, 0) plotter unit coordinates
+
+origin_location_reference = "topleft"
+                                    # (optional) reference used for origin_location
+                                    # "topleft" (default) or "botleft"
+
+x_range = [-7070, 7060]                # (optional) admissible range in plotter units along
+                                    # the X axis
+y_range = [-9984, 9984]                # (optional) admissible range in plotter units along
+                                    # the Y axis
+y_axis_up = true                    # set to true if the plotter's Y axis points up on
+                                    # the physical page
+rotate_180 = false                   # (optional) set to true to rotate the geometries by
+                                    # 180 degrees on the page
+
+set_ps = 0                          # (optional) if present, a PS command with the
+                                    # corresponding value is generated
+
+final_pu_params = "0,0"             # (optional) if present, specifies parameter to pass
+                                    # to the final `PU;` command
+
+info = "Paper loading..."           # (optional) human-readable information on how the
+                                    # paper must be loaded for this configuration to work
+                                    # as expected

@@ -12,10 +12,14 @@ import os
 import datetime
 import serial
 import math
+import copy
 from informativeDrawings import informativeDrawings
 from traceSkeleton import trace_skeleton
 import gridCreation
-import image_operations
+import imageOperations
+import exportOperations
+
+sine_pattern = None
 
 
 ##################
@@ -33,6 +37,11 @@ run_params = {
     "print": True,
     "mergedSvg": True
 }
+
+states = ["cam","shooting","image_select","style_select","export"]
+current_state = "cam"
+image_container = []
+line_container = []
 
 # params for image size and position in grid
 grid = []
@@ -69,12 +78,12 @@ render_quality = 512
 
 d_line = 10
 angle_line = 45
-threshold_line = 128
-threshold_line2 = 200
+threshold_min = 128
+threshold_Max = 200
 
 
 # rotation of cam image
-cam_img_rotate = 1  # start with 90° counterclockwise. press R to rotate
+cam_img_rotate = 3  # start with 90° counterclockwise. press R to rotate
 img_rotater = ["", cv2.ROTATE_90_COUNTERCLOCKWISE, cv2.ROTATE_180, cv2.ROTATE_90_CLOCKWISE]
 
 show_fps = False  # fps counter
@@ -139,12 +148,12 @@ def set_angle_line(x):
     angle_line = x
 
 def set_threshold_line(x):
-    global threshold_line
-    threshold_line = x
+    global threshold_min
+    threshold_min = x
 
 def set_threshold_line2(x):
-    global threshold_line2
-    threshold_line2 = x
+    global threshold_Max
+    threshold_Max = x
 
 
 def start_new_drawing():
@@ -294,6 +303,62 @@ def export_image(output_image, mask):
     with open("counter.json", "w") as f:
         json.dump(cf, f)
 
+def create_line_variations(image_container,line_container):
+    blurs = [0,3,5,11]
+    for i in range(len(image_container)):
+        if i>0:
+            image_container[i] = cv2.GaussianBlur(image_container[i], (blurs[i],blurs[i]), 0)
+        line_container.append(imageOperations.extract_contours(image_container[i]))
+        image_container[i][:] = 255
+        image_container[i] = imageOperations.create_preview_from_polys(line_container[i], image_container[i],(0,0,0),1)
+    preview = np.concatenate((image_container), axis=1)
+    cv2.putText(preview,"Bild auswaehlen (n abbruch)", (20,40), cv2.FONT_HERSHEY_SIMPLEX, 1.2, 0)
+    for i in range(len(image_container)):
+        cv2.putText(preview,str(i), (20 + i*image_container[0].shape[1],100), cv2.FONT_HERSHEY_SIMPLEX, 2, 0)
+    cv2.imshow("tracant", preview)
+
+def finalize_image(output_image,lines):
+    global current_state
+    current_state = "export"
+    
+    f = open("layer.json")
+    s = json.load(f)
+
+    # export
+    dx = -20
+    dy = 0
+    wp = 280
+    hp = 400
+
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S_")
+
+    #lines = imageOperations.extract_contours(output_image)
+    preview = output_image.copy()
+
+    preview[:] = 255
+        
+    for i,item in enumerate(s["hatchNoise"]):
+        h = imageOperations.img_to_polys(output_image,item)
+        exportOperations.export_polys_as_hpgl(h, output_image.shape, timestamp +str(i) + "_"+ item["color"], wp, hp,"70_90",dx,dy)
+        preview = imageOperations.create_preview_from_polys(h, preview,(128,128,128),1)
+        
+    exportOperations.export_polys_as_hpgl(lines, output_image.shape, timestamp + "4_black", wp, hp,"70_90",dx,dy,True)
+    preview = imageOperations.create_preview_from_polys(lines, preview,(0,0,0),1)
+    cv2.putText(preview,"Leertaste fuer neue Aufnahme", (20,40), cv2.FONT_HERSHEY_SIMPLEX, 0.8, 0)
+    cv2.imshow("tracant", preview)
+
+def update_navigation(key,current_state,image_container,line_container):
+    if current_state == "image_select" or current_state == "style_select":
+        output_image = image_container[0]
+        for i in range(len(image_container)):
+            image_container[i] = output_image.copy()
+        if current_state == "image_select":
+            current_state = "style_select"
+            line_container = []
+            create_line_variations(image_container,line_container)
+        elif current_state == "style_select":
+            finalize_image(image_container[0],line_container[0])
+
 
 ##############
 # main script
@@ -312,15 +377,16 @@ selfie_segmentation = mp_selfie_segmentation.SelfieSegmentation(model_selection=
 cv2.namedWindow("output")
 cv2.namedWindow("cam")
 
-cv2.createTrackbar("blur_image", "cam", 10, 40, set_blur_image)
+cv2.createTrackbar("blur_image", "cam", 0, 40, set_blur_image)
 cv2.createTrackbar("circle_border", "cam", 22, 80, set_circle_border)
 cv2.createTrackbar("circle_radius", "cam", 10, 30, set_circle_radius)
+cv2.createTrackbar("clip_limit", "cam", 2, 10, set_clip_limit)
 
 cv2.namedWindow("output")
-cv2.createTrackbar("d_line", "output", 5, 100, set_d_line)
-cv2.createTrackbar("angle_line", "output", 0, 180, set_angle_line)
-cv2.createTrackbar("threshold", "output", 10, 245, set_threshold_line)
-cv2.createTrackbar("threshold2", "output", 40, 245, set_threshold_line2)
+cv2.createTrackbar("d_line", "output", 12, 100, set_d_line)
+cv2.createTrackbar("angle_line", "output", 45, 180, set_angle_line)
+cv2.createTrackbar("threshold", "output", 0, 254, set_threshold_line)
+cv2.createTrackbar("threshold2", "output", 200, 245, set_threshold_line2)
 
 # init info drawings
 # opt = informativeDrawings.Options()
@@ -328,7 +394,7 @@ cv2.createTrackbar("threshold2", "output", 40, 245, set_threshold_line2)
 # informativeDrawings.init_nn(opt)
 
 # create grid
-layout = gridCreation.create_single(config)
+layout = gridCreation.create_grid(config)
 
 # show usage/documentation in console
 show_usage()
@@ -341,88 +407,110 @@ while cap.isOpened():
     # count fps
     start_time = time.time()  # start time of the loop
 
-    # read image
-    success, image = cap.read()
-    if not success:
-        print("Ignoring empty camera frame.")
-        continue
+    if current_state == "cam" or current_state == "shooting":
+        # read image
+        success, image = cap.read()
+        if not success:
+            print("Ignoring empty camera frame.")
+            continue
 
-    # the BGR image to RGB.
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-    # rotate image since camera is rotated as well
-    if cam_img_rotate != 0:
-        image = cv2.rotate(image, img_rotater[cam_img_rotate])
+        image= cv2.imread("test.jpg")
+        #image = cv2.rotate(image, img_rotater[1])
 
-    # init output image with zeros
-    output_image = np.zeros(
-        (layout["grid"][0]["heightPx"], layout["grid"][0]["widthPx"], 3), np.uint8,)
+        # the BGR image to RGB.
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        # rotate image since camera is rotated as well
+        
+    # if cam_img_rotate != 0:
+    #     image = cv2.rotate(image, img_rotater[cam_img_rotate])
 
-    # calulate image ratio and resize image to config settings
-    ratio = image.shape[0] / image.shape[1]
+        # init output image with zeros
+        output_image = np.zeros(
+            (layout["grid"][0]["heightPx"], layout["grid"][0]["widthPx"], 3), np.uint8,)
 
-    # landscape
-    # image = cv2.resize(image, (int(config["resImg"] / ratio), config["resImg"]))
+        # calulate image ratio and resize image to config settings
+        ratio = image.shape[0] / image.shape[1]
 
-    # portrait
-    image = cv2.resize(image, (int(config["layout"]["resImg"] / ratio), config["layout"]["resImg"]))
+        # landscape
+        # image = cv2.resize(image, (int(config["resImg"] / ratio), config["resImg"]))
 
-    # set not writable for more performance
-    image.flags.writeable = False
+        # portrait
+        image = cv2.resize(image, (int(config["layout"]["resImg"] / ratio), config["layout"]["resImg"]))
 
-    # detect faces
-    faces = face_detection.process(image)
+        # set not writable for more performance
+        image.flags.writeable = False
 
-    # continue if face detected
-    if faces.detections:
-        if not is_face_detected:
-            time_last_detection = time.time()
+        # detect faces
+        faces = face_detection.process(image)
 
-        is_face_detected = True
+        # continue if face detected
+        if faces.detections:
+            if not is_face_detected:
+                time_last_detection = time.time()
 
-        # get segmented image
-        segmentation_bg = selfie_segmentation.process(image)
+            is_face_detected = True
 
-        # prepare and cut out img
-        condition = np.stack((segmentation_bg.segmentation_mask,) * 3, axis=-1) > 0.1
-        # init bg image
-        if bg_image is None:
-            bg_image = np.zeros(image.shape, dtype=np.uint8)
-            bg_image[:] = (255, 255, 255)
+            # get segmented image
+            segmentation_bg = selfie_segmentation.process(image)
 
-        if bg_image_inv is None:
-            bg_image_inv = np.zeros(image.shape, dtype=np.uint8)
-            bg_image_inv[:] = (0, 0, 0)
+            # prepare and cut out img
+            #condition = np.stack((segmentation_bg.segmentation_mask,) * 3, axis=-1) > 0.1
+            condition = np.stack((segmentation_bg.segmentation_mask,) * 3, axis=-1)
+            
+            # init bg image
+            if bg_image is None:
+                bg_image = np.zeros(image.shape, dtype=np.uint8)
+                bg_image[:] = (255, 255, 255)
 
-        # equalize histogram for better contrasts
-        out = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            if bg_image_inv is None:
+                bg_image_inv = np.zeros(image.shape, dtype=np.uint8)
+                bg_image_inv[:] = (0, 0, 0)
 
-        # blur part around face
-        out_blur = cv2.medianBlur(out, blur_image)
-        circular_mask = np.zeros(out.shape, dtype=np.uint8)
+            
+            out = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            
 
-        for face in faces.detections:
-            bb = face.location_data.relative_bounding_box
-            c_x = int((bb.xmin + 0.5*bb.width)*out.shape[1])
-            c_y = int((bb.ymin + 0.5*bb.height)*out.shape[0])
-            r = int(max(bb.height*out.shape[0], bb.width*out.shape[1])*0.5*circle_radius)
-            cv2.circle(circular_mask, (c_x, c_y), r, (255,255,255), thickness=-1)
+            # blur part around face
+            out_blur = out
+            #out_blur = cv2.medianBlur(out, blur_image)
+            circular_mask = np.zeros(out.shape, dtype=np.uint8)
 
-        circular_mask = cv2.GaussianBlur(circular_mask, (circle_border, circle_border), 0)
-        circular_mask = circular_mask/255
+            for face in faces.detections:
+                bb = face.location_data.relative_bounding_box
+                c_x = int((bb.xmin + 0.5*bb.width)*out.shape[1])
+                c_y = int((bb.ymin + 0.5*bb.height)*out.shape[0])
+                r = int(max(bb.height*out.shape[0], bb.width*out.shape[1])*0.5*circle_radius)
+                cv2.circle(circular_mask, (c_x, c_y), r, (255,255,255), thickness=-1)
 
-        out =  (out * circular_mask + out_blur * (1 - circular_mask)).astype(np.uint8)
+            circular_mask = cv2.GaussianBlur(circular_mask, (circle_border, circle_border), 0)
+            circular_mask = circular_mask/255
 
-        # remove bg from edge image
-        output_image = np.where(condition, out, bg_image)
-        output_image_inv = np.where(condition, out, bg_image_inv)
+            out =  (out * circular_mask + out_blur * (1 - circular_mask)).astype(np.uint8)
 
-        # create a mask to dstinct back and foreground
-        mask = np.where(condition, image, bg_image)
-        gray2 = cv2.cvtColor(mask, cv2.COLOR_BGR2GRAY)
-        ret, mask = cv2.threshold(gray2, 254, 255, cv2.THRESH_BINARY)
+            # remove bg from edge image
+            output_image =  (out * condition + bg_image * (1 - condition)).astype(np.uint8)
+            output_image_inv =  (out * condition + bg_image_inv * (1 - condition)).astype(np.uint8)
+    
 
-        # show output image
-        cv2.imshow("cam", output_image)
+            # show output image
+            if current_state == "cam" :
+                cv2.imshow("tracant", output_image)
+            elif current_state == "shooting" :
+                image_container.append(output_image.copy())
+                if len(image_container)>=4:
+                    current_state = "image_select"
+                    preview = np.concatenate((image_container), axis=1)
+                    cv2.putText(preview,"Bild auswaehlen(n abbruch)", (20,40), cv2.FONT_HERSHEY_SIMPLEX, 1.2, 0)
+                    for i in range(len(image_container)):
+                        cv2.putText(preview,str(i), (20 + i*image_container[0].shape[1],100), cv2.FONT_HERSHEY_SIMPLEX, 2, 0)
+                    cv2.imshow("tracant", preview)
+        
+        
+        
+        #imageOperations.trace_image(img, export_preview)
+
+        
+        
     else:
         is_face_detected = False
 
@@ -436,6 +524,7 @@ while cap.isOpened():
 
         time_last_detection = time.time()
 
+    print(current_state)
     # get last pressed key
     k = cv2.waitKey(1)
     if k == -1:
@@ -464,41 +553,50 @@ while cap.isOpened():
     elif k == ord("q"):
         start_new_drawing()
         print("Hey! I still wanted to paint that! Grrml. Ok i will start a new one.")
-    elif k == ord("l"):
-        
-        lines = image_operations.extract_contours(output_image)
-        
-        # white bg
-        threshI = image_operations.hatch_area(output_image,threshold_line,angle_line,d_line)
-        thresh2I = image_operations.hatch_area(output_image, threshold_line2, (angle_line+90)%180,d_line)
-        output_image[:] = 255
-        output_image = image_operations.create_preview_from_polys(threshI, output_image, (50, 50, 50))
-        output_image = image_operations.create_preview_from_polys(thresh2I, output_image, (50, 50, 50))
-        output_image = image_operations.create_preview_from_polys(lines, output_image, (0, 0, 0))
-        cv2.imshow("output2", output_image)
-        
 
-        # gray bg
-        thresh = image_operations.hatch_area(output_image_inv, threshold_line,angle_line,d_line, invert_image=True)
-        thresh2 = image_operations.hatch_area(output_image_inv, threshold_line2, (angle_line+90)%180,d_line, invert_image=True)
-        output_image[:] = 30
-        output_image = image_operations.create_preview_from_polys(thresh, output_image, (180, 180, 180))
-        output_image = image_operations.create_preview_from_polys(thresh2, output_image, (180, 180, 180))
-        output_image = image_operations.create_preview_from_polys(lines, output_image, (255, 255, 255))
-        cv2.imshow("output", output_image)
+    elif k == ord(" "):
+        if current_state == "cam":
+            current_state = "shooting"
+            image_container = []
+        elif current_state == "export":
+            current_state = "cam"
+    elif k == ord("n"):
+        current_state = "cam"
+    elif k == ord("0"):
+        update_navigation(0, current_state, image_container, line_container)
+    elif k == ord("1"):
+        update_navigation(1, current_state, image_container, line_container)
+    elif k == ord("2"):
+        update_navigation(2, current_state, image_container, line_container)
+    elif k == ord("3"):
+        update_navigation(3, current_state, image_container, line_container)
+
+    elif k == ord("#"):
+        f = open("layer.json")
+        s = json.load(f)
+
+        # export
+        dx = -20
+        dy = 0
+        wp = 280
+        hp = 400
+
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S_")
+
+        lines = imageOperations.extract_contours(output_image)
+        preview = output_image.copy()
+
+        preview[:] = 255
         
+        for i,item in enumerate(s["hatchNoise"]):
+            h = imageOperations.img_to_polys(output_image,item)
+            exportOperations.export_polys_as_hpgl(h, output_image.shape, timestamp +str(i) + "_"+ item["color"], wp, hp,"70_90",dx,dy)
+            preview = imageOperations.create_preview_from_polys(h, preview,(128,128,128),1)
         
-        # blue red hatching
-        r, g, b    = output_image_inv[:, :, 0], output_image_inv[:, :, 1], output_image_inv[:, :, 2]
-        red = image_operations.hatch_area(r, threshold_line,angle_line,d_line, invert_image=True)
-        blue = image_operations.hatch_area(b, threshold_line2, (angle_line+90)%180,d_line, invert_image=True)
-        output_image[:] = 30
-        output_image = image_operations.create_preview_from_polys(red, output_image, (255,0,0))
-        output_image = image_operations.create_preview_from_polys(blue, output_image, (0, 0, 255))
-        output_image = image_operations.create_preview_from_polys(lines, output_image, (255, 255, 255))
-        cv2.imshow("output3", output_image)
-        
-        
+        exportOperations.export_polys_as_hpgl(lines, output_image.shape, timestamp + "4_black", wp, hp,"70_90",dx,dy,True)
+        preview = imageOperations.create_preview_from_polys(lines, preview,(0,0,0),1)
+        cv2.imshow("preview", preview)
+
     elif k & 0xFF == 27:
         break
 

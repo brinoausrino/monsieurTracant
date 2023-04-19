@@ -2,6 +2,66 @@ import numpy as np
 import cv2
 
 
+def create_grid(config):
+    grid = []
+
+    width = config["layout"]["paperSize"][0] - config["layout"]["margin"][1] - config["layout"]["margin"][3]
+    height = config["layout"]["paperSize"][1] - config["layout"]["margin"][0] - config["layout"]["margin"][2]
+    
+    w_img = config["grid"]["size_single_img"][0]
+    h_img = config["grid"]["size_single_img"][1]
+
+    # load or create Mask Image based on config dpi
+    cm_to_px = config["layout"]["dpi"] / 2.54
+
+    # calculate the center of the paper in px
+    center_px = [
+        config["layout"]["paperSize"][0] * 0.5 * cm_to_px,
+        config["layout"]["paperSize"][1] * 0.5 * cm_to_px,
+    ]
+
+    # center coords to object
+    cx = 0.5 * config["layout"]["paperSize"][0]
+    cy = 0.5 * config["layout"]["paperSize"][1]
+
+    # calculate number of images
+    xn_images = int(width / (w_img + config["grid"]["padding"]))
+    yn_images = int(height / (h_img + config["grid"]["padding"]))
+
+    # center images
+    dy = config["layout"]["margin"][0] + (width - xn_images*w_img)*0.5 -cy
+    dx = config["layout"]["margin"][1] + (height - h_img)*0.5 -cx
+
+    for y_t in range(yn_images):
+        for x_t in range(xn_images):
+            
+            # calculate pixel coords
+            x_px = int(dx*cm_to_px)
+            y_px = int(dy*cm_to_px)
+            h_px = int(h_img*cm_to_px)
+            w_px = int(w_img*cm_to_px)
+    
+            grid.append(
+                {
+                    "height": h_img, 
+                    "width": w_img, 
+                    "x": dx, 
+                    "y": dy, 
+                    "xPx": x_px, 
+                    "yPx": y_px, 
+                    "widthPx": w_px, 
+                    "heightPx": h_px
+                }
+            ) 
+            dx += w_img + config["grid"]["padding"]
+        dy += h_img + config["grid"]["padding"]
+
+    return {
+        "cm_to_px": cm_to_px,
+        "center_px": center_px,
+        "grid": grid
+    }
+
 def create_single(config):
     grid = []
 
@@ -77,7 +137,7 @@ def create_single(config):
 # creates person grid based on config file
 # some calculations me be confuding, since the final image is rotated 90°
 # therefore x and y are swapped
-def create_grid(config):
+def create_perspective_grid(config):
     grid = []
 
     # printable length on paper 
