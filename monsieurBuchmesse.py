@@ -21,7 +21,6 @@ import exportOperations
 
 sine_pattern = None
 
-
 ##################
 # global variables
 ##################
@@ -72,7 +71,7 @@ blur_edge = 5
 
 blur_image = 8
 circle_radius = 1.0
-circle_border = 56
+circle_border = 56*2 +1
 clip_limit = 2
 render_quality = 512
 
@@ -89,12 +88,6 @@ img_rotater = ["", cv2.ROTATE_90_COUNTERCLOCKWISE, cv2.ROTATE_180, cv2.ROTATE_90
 show_fps = False  # fps counter
 canvas_full = False  # is the Canvas fully filled?
 
-ser = 0
-try:
-    ser = serial.Serial('/dev/ttyACM0', 9600, timeout=1)
-except:
-    print("LED not available")
-
 
 #########
 # functions
@@ -106,202 +99,12 @@ def show_usage():
     print(" //  | //   | |  //   / / //   / /   \ \    / / //       //          / /  //      //   / / //       //   / / //   / /  / /     ")
     print("//   |//    | | ((___/ / //   / / //   ) ) / / ((____   //          / /  //      ((___( ( ((____   ((___( ( //   / /  / /      ")
     print("Press [p] for taking a picture")
-    print("Press [s] to start a new image after the current one was full")
-    print("Press [q] to force a reset and start drawing a new image ")
-    print("Press [r] for rotating the cam - not functional yet")
+    print("Press [ ] to take a photo")
+    print("Press [#] for fastlane export")
     print("Press [f] for a FPS counter in the console")
-    print("Press [g] for export a test grid as svg")
+    print("Press [g] for export a test grid")
     print("Press [ESC] to quit")
 
-# gui callback functions
-def set_line_size(x):
-    global line_size
-    line_size = x*2+3
-
-
-def set_blur_edge(x):
-    global blur_edge
-    blur_edge = x*2+1
-
-def set_blur_image(x):
-    global blur_image
-    blur_image = x*2+1
-
-def set_circle_border(x):
-    global circle_border
-    circle_border = x*2+1
-
-def set_circle_radius(x):
-    global circle_radius
-    circle_radius = x/10
-
-def set_clip_limit(x):
-    global clip_limit
-    clip_limit = x
-
-def set_d_line(x):
-    global d_line
-    d_line = x
-
-def set_angle_line(x):
-    global angle_line
-    angle_line = x
-
-def set_threshold_line(x):
-    global threshold_min
-    threshold_min = x
-
-def set_threshold_line2(x):
-    global threshold_Max
-    threshold_Max = x
-
-
-def start_new_drawing():
-    # clean up all files from /out/ into a timestamped subfolder
-    target_dir = os.path.join(os.getcwd(), config["outputFolder"], datetime.datetime.now().strftime('%y%m%d_%H%M'))
-    os.makedirs(target_dir)
-
-    file_names = os.listdir(config["outputFolder"])
-
-    for file_name in file_names:
-        if "." in file_name:  # move only files
-            shutil.move(os.path.join(config["outputFolder"]+"/", file_name), target_dir)
-
-    # reset the mask and preview by creating a new grid
-    grid = []
-    gridCreation.create_single(config)
-
-    # reset the currentId JSON counter to 0
-    f = open("counter.json")
-    cf = json.load(f)
-    cf["currentId"] = 0
-    with open("counter.json", "w") as f:
-        json.dump(cf, f)
-
-def page_is_full():
-    # code for having a full page, currently happening
-    # when counter.json has counterId > 37
-    # we check if the export_image call failed because of this issues
-    f = open("counter.json")
-    cf = json.load(f)
-    currentId = cf["currentId"]
-
-    # if this not the bug we will stop here
-    if currentId <= 36:
-        print("An exception occured during export_image function.")
-        return
-
-    print("I have filled the paper completely.")
-    print("I will now sign it and then you can place a new canvas in the plotter.")
-    print("Press [s] when you are ready.")
-    # otherwise the paper is fully filled and we should
-    # (a) wait for a new paper to be inserted, prevent drawing in the mean time
-    canvas_full = True  # this does not work if its only set inside this function. we set it before calling this function as well
-
-    # (b) sign the document with an pre-made svg signature
-
-
-# mask image, update image mask and export image to hpgl
-def export_image(output_image, mask):
-    global run_params
-    global mask_img
-    global preview_img
-    global config
-
-    # get current position in grid from counter.json
-    f = open("counter.json")
-    cf = json.load(f)
-    currentId = cf["currentId"]
-
-    # get size and position settings for current element
-    elemSettings = grid[currentId]
-
-    # rotate images
-    output_image = cv2.rotate(output_image, cv2.ROTATE_90_COUNTERCLOCKWISE)
-    mask = cv2.rotate(mask, cv2.ROTATE_90_COUNTERCLOCKWISE)
-
-    x_px = elemSettings["xPx"]
-    y_px = elemSettings["yPx"]
-    w_px = elemSettings["widthPx"]
-    h_px = elemSettings["heightPx"]
-
-    # scale and translate mask for mask_img
-    mask_scaled_size = (w_px, h_px)
-    mask = cv2.resize(mask, mask_scaled_size)
-
-    # extract t_mask from mask_img to mask image
-    t_mask = mask_img[y_px: y_px + h_px, x_px: x_px + w_px]
-    t_mask = cv2.resize(t_mask, (output_image.shape[1], output_image.shape[0]))
-    t_mask = np.invert(t_mask)
-
-    # convert output image to grayscale and mask it
-    output_image = cv2.cvtColor(output_image, cv2.COLOR_BGR2GRAY)
-    output_image = np.maximum(output_image, t_mask)
-
-    # create and show preview image
-    # resize the output_image, merge it with matiching section of preview image
-    # and insert merged image
-    preview_img[y_px: y_px + h_px, x_px: x_px + w_px] = np.minimum(
-        preview_img[y_px: y_px + h_px, x_px: x_px + w_px],
-        cv2.resize(output_image, mask_scaled_size)
-    )
-    cv2.imshow("preview_img", preview_img)
-
-    # update mask with current image
-    mask_img[y_px: y_px + h_px, x_px: x_px + w_px] = np.minimum(
-        mask, mask_img[y_px: y_px + h_px, x_px: x_px + w_px]
-    )
-
-    # export image and mask
-    cv2.imwrite(config["outputFolder"] + "preview.bmp", preview_img)
-    cv2.imwrite(config["outputFolder"] + "mask.bmp", mask_img)
-    cv2.imwrite(config["outputFolder"] + str(currentId) + ".bmp", output_image)
-
-    # run vpype scripts to trace image, position on paper, export as hpgl and plot
-    ser.write('h'.encode())
-    if run_params["scripts"]:
-        # trace
-        bashCommand = "sh 0_trace_image.sh " + config["outputFolder"] + str(currentId)
-        process = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
-        output, error = process.communicate()
-
-        # place vector image on paper
-        bashCommand = (
-            "sh 1_scale_position.sh " + config["outputFolder"] + str(currentId) + " "
-            + str(elemSettings["width"])
-            + "cm "
-            + str(elemSettings["height"])
-            + "cm "
-            + str(elemSettings["x"])
-            + "cm "
-            + str(elemSettings["y"])
-            + "cm"
-        )
-        process = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
-        output, error = process.communicate()
-
-        # merge in svg for testing purposes
-        # !caution: takes some time
-        if run_params["mergedSvg"]:
-            bashCommand = "sh 4_mergeLayers.sh " + config["outputFolder"] + str(currentId) + "_scaled"
-            process = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
-            output, error = process.communicate()
-
-        # export as hpgl
-        bashCommand = "sh 3_export_hpgl.sh " + config["outputFolder"] + str(currentId) + "_scaled"
-        process = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
-        output, error = process.communicate()
-
-    # print hpgl
-    if run_params["print"]:
-        bashCommand = "python hp7475a_send.py " + config["outputFolder"] + str(currentId) + "_scaled.hpgl -p " + config["hardware"]["plotterSerial"]
-        process = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
-        output, error = process.communicate()
-
-    # update id and write to file
-    cf["currentId"] += 1
-    with open("counter.json", "w") as f:
-        json.dump(cf, f)
 
 def create_line_variations(image_container,line_container):
     blurs = [0,3,5,11]
@@ -332,6 +135,7 @@ def finalize_image(output_image,lines):
 
     #lines = imageOperations.extract_contours(output_image)
     preview = output_image.copy()
+    
 
     preview[:] = 255
         
@@ -347,15 +151,15 @@ def finalize_image(output_image,lines):
 
 def update_navigation(key,current_state,image_container,line_container):
     if current_state == "image_select" or current_state == "style_select":
-        output_image = image_container[0]
+        temp = image_container[0]
         for i in range(len(image_container)):
-            image_container[i] = output_image.copy()
+            image_container[i] = temp.copy()
         if current_state == "image_select":
             current_state = "style_select"
             line_container = []
             create_line_variations(image_container,line_container)
         elif current_state == "style_select":
-            finalize_image(image_container[0],line_container[0])
+            finalize_image(output_image,line_container[0])
             current_state = "export"
     return current_state,line_container
 
@@ -371,26 +175,6 @@ face_detection = mp_face_detection.FaceDetection(
     model_selection=1, min_detection_confidence=0.5
 )
 selfie_segmentation = mp_selfie_segmentation.SelfieSegmentation(model_selection=1)
-
-# create openCV window with sliders for edge filter
-cv2.namedWindow("output")
-cv2.namedWindow("cam")
-
-cv2.createTrackbar("blur_image", "cam", 0, 40, set_blur_image)
-cv2.createTrackbar("circle_border", "cam", 22, 80, set_circle_border)
-cv2.createTrackbar("circle_radius", "cam", 10, 30, set_circle_radius)
-cv2.createTrackbar("clip_limit", "cam", 2, 10, set_clip_limit)
-
-cv2.namedWindow("output")
-cv2.createTrackbar("d_line", "output", 12, 100, set_d_line)
-cv2.createTrackbar("angle_line", "output", 45, 180, set_angle_line)
-cv2.createTrackbar("threshold", "output", 0, 254, set_threshold_line)
-cv2.createTrackbar("threshold2", "output", 200, 245, set_threshold_line2)
-
-# init info drawings
-# opt = informativeDrawings.Options()
-# opt.dataroot = "test.png"
-# informativeDrawings.init_nn(opt)
 
 # create grid
 layout = gridCreation.create_grid(config)
@@ -513,45 +297,12 @@ while cap.isOpened():
     else:
         is_face_detected = False
 
-    # autodraw
-    if autodraw and is_face_detected and time.time() - time_last_detection > time_delay_photo:
-        try:
-            export_image(output_image, mask)
-        except:
-            canvas_full = True  # prevent further drawing till [s] is pressed
-            page_is_full()
-
-        time_last_detection = time.time()
-
     # get last pressed key
     k = cv2.waitKey(1)
     if k == -1:
         pass
-    # if key was 'p' then start exporting and plotting
-    elif k == ord("p") and not canvas_full:
-        try:
-            export_image(output_image, mask)
-        except:
-            canvas_full = True  # prevent further drawing till [s] is pressed
-            page_is_full()
-    # if key was 'r' then rotate image
-    elif k == ord("r"):
-        cam_img_rotate = (cam_img_rotate+1) % 4  # select next rotation style (none, 90ccw,180,90cw)
-    # if key was 'f' then to show FPS counter in console
     elif k == ord("f"):
         show_fps = not show_fps
-    # if key was 's' and  to show FPS counter in console
-    elif k == ord("s"):
-        if canvas_full:
-            canvas_full = False
-            start_new_drawing()
-            print("I will now draw again. Thanks for the paper")
-        else:
-            print("The image was not full yet. I will continue drawing on the old one.")
-    elif k == ord("q"):
-        start_new_drawing()
-        print("Hey! I still wanted to paint that! Grrml. Ok i will start a new one.")
-
     elif k == ord(" "):
         if current_state == "cam":
             current_state = "shooting"
@@ -591,9 +342,24 @@ while cap.isOpened():
             exportOperations.export_polys_as_hpgl(h, output_image.shape, timestamp +str(i) + "_"+ item["color"], wp, hp,"70_90",dx,dy)
             preview = imageOperations.create_preview_from_polys(h, preview,(128,128,128),1)
         
-        exportOperations.export_polys_as_hpgl(lines, output_image.shape, timestamp + "4_black", wp, hp,"70_90",dx,dy,True)
+        exportOperations.export_polys_as_hpgl(lines, output_image.shape, timestamp + "4_black", wp, hp,"70_90",dx,dy,False)
         preview = imageOperations.create_preview_from_polys(lines, preview,(0,0,0),1)
         cv2.imshow("preview", preview)
+        
+    elif k == ord("g"):
+        f = open("layer.json")
+        s = json.load(f)
+
+        # export
+        dx = -20
+        dy = 0
+        wp = 280
+        hp = 400
+
+        p = [[(0, 0), (2, 2), (2, 2), (4, 4)]]
+        
+        exportOperations.export_polys_as_hpgl(p, output_image.shape, "grid", wp, hp,"70_90",dx,dy,True)
+
 
     elif k & 0xFF == 27:
         break
