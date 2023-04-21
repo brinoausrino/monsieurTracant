@@ -34,9 +34,9 @@ def map(value,  inputMin,  inputMax,  outputMin,  outputMax, clamp = True):
     return outVal
     
 
-def cm_to_hpgl_coord(pos_cm,paperformat):
-    return (map(pos_cm[0]*10,paperformat["size_mm"][0]*-0.5,paperformat["size_mm"][0]*0.5,paperformat["hpgl_coords"][0][0],paperformat["hpgl_coords"][0][1]),\
-            map(pos_cm[1]*10,paperformat["size_mm"][1]*-0.5,paperformat["size_mm"][1]*0.5,paperformat["hpgl_coords"][1][0],paperformat["hpgl_coords"][1][1]))
+def mm_to_hpgl_coord(pos_mm,paperformat):
+    return (int(map(pos_mm[0],paperformat["size_mm"][0]*-0.5,paperformat["size_mm"][0]*0.5,paperformat["hpgl_coords"][0][0],paperformat["hpgl_coords"][0][1])),\
+            int(map(pos_mm[1],paperformat["size_mm"][1]*-0.5,paperformat["size_mm"][1]*0.5,paperformat["hpgl_coords"][1][0],paperformat["hpgl_coords"][1][1])))
 
 def export_polys_as_svg(polys, file, width, height, color = "black"):
     open(file, 'w')\
@@ -100,8 +100,7 @@ def hpgl_remove_pen_select_commands(file):
 def hpgl_add_signature(file,position,font_size=0.8):
     data = None
     with open(file, 'r') as f:
-        
-        signature =  ";PU"+str(position[0])+","+str(position[1])+";DT$;SI" + str(font_size*0.625)+"," + str(font_size) + ";LBWTraçant$;IN;"
+        signature =  ";PU"+str(position[0])+","+str(position[1])+";DT ;SI" + str(font_size*0.625)+"," + str(font_size) + ";DI-1,0;CS34;LBTra\\ant'23 ;IN;"
         
         # Reading the content of the file
         data = f.read()
@@ -132,9 +131,11 @@ def svg_to_hpgl(input_file,output_file, format="70_90",add_signature = False,pos
     process = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
     output, error = process.communicate()
 
-    hpgl_remove_pen_select_commands(output_file)
     if add_signature:
         hpgl_add_signature(output_file, pos_signature)
+        
+    hpgl_remove_pen_select_commands(output_file)
+    
 
 def export_polys_as_hpgl(polys,image_size,name,width_print,height_print,format="70_90",x_print=0,y_print=0,add_signature = False,output_folder="toPrint"):
     export_polys_as_svg(polys,output_folder + "/" + name + ".svg", image_size[1], image_size[0])
@@ -145,5 +146,6 @@ def export_polys_as_hpgl(polys,image_size,name,width_print,height_print,format="
                         str(x_print) + "mm",
                         str(y_print) + "mm")
     
-    pos_signature = cm_to_hpgl_coord((int(x_print) + int(width_print) - 6, (int(y_print) + int(height_print) - 3)),paper_formats[format])
+    #pos_signature = mm_to_hpgl_coord(((int(y_print) + int(height_print) - 3,int(x_print) + int(width_print) - 6)),paper_formats[format])
+    pos_signature= mm_to_hpgl_coord(((y_print-height_print*0.5 + 150,x_print+width_print*0.5)),paper_formats[format])
     svg_to_hpgl(output_folder + "/" + name + "_scale.svg",output_folder + "/" + name + ".hpgl",format,add_signature,pos_signature)
