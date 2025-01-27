@@ -126,10 +126,10 @@ def finalize_image(output_image,lines):
     s = json.load(f)
 
     # export
-    dx = -20
+    dx = 50
     dy = 0
-    wp = 280
-    hp = 400
+    wp = 200
+    hp = 390
 
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S_")
 
@@ -141,10 +141,10 @@ def finalize_image(output_image,lines):
         
     for i,item in enumerate(s["hatchNoise"]):
         h = imageOperations.img_to_polys(output_image,item)
-        exportOperations.export_polys_as_hpgl(h, output_image.shape, timestamp +str(i) + "_"+ item["color"], wp, hp,"70_90",dx,dy)
+        exportOperations.export_polys_as_hpgl(h, output_image.shape, timestamp +str(i) + "_"+ item["color"], wp, hp,"A3_7475A",0,dx,dy)
         preview = imageOperations.create_preview_from_polys(h, preview,(128,128,128),1)
         
-    exportOperations.export_polys_as_hpgl(lines, output_image.shape, timestamp + "4_black", wp, hp,"70_90",dx,dy,True)
+    exportOperations.export_polys_as_hpgl(lines, output_image.shape, timestamp + "4_black", wp, hp,"A3_7475A",0,dx,dy,True)
     preview = imageOperations.create_preview_from_polys(lines, preview,(0,0,0),1)
     cv2.putText(preview,"Leertaste fuer neue Aufnahme", (20,40), cv2.FONT_HERSHEY_SIMPLEX, 0.8, 0)
     cv2.imshow("tracant", preview)
@@ -197,8 +197,8 @@ while cap.isOpened():
             print("Ignoring empty camera frame.")
             continue
 
-        #image= cv2.imread("test.jpg")
-        image = cv2.rotate(image, img_rotater[1])
+        #image= cv2.imread("test.png")
+        image = cv2.rotate(image, img_rotater[3])
 
         # the BGR image to RGB.
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
@@ -324,18 +324,10 @@ while cap.isOpened():
         f = open("layer.json")
         s = json.load(f)
 
-         #7576a
-        '''
-        dx = -20
+        # export
+        dx = 0
         dy = 0
-        wp = 280
-        hp = 400
-        '''
-                
-        #7475a
-        dx = 163.5
-        dy = 220
-        wp = 177
+        wp = 220
         hp = 350
 
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S_")
@@ -347,10 +339,10 @@ while cap.isOpened():
         
         for i,item in enumerate(s["hatchNoise"]):
             h = imageOperations.img_to_polys(output_image,item)
-            exportOperations.export_polys_as_hpgl(h, output_image.shape, timestamp +str(i) + "_"+ item["color"], wp, hp,"70_90",dx,dy)
+            exportOperations.export_polys_as_hpgl(h, output_image.shape, timestamp +str(i) + "_"+ item["color"], wp, hp,"A3_7475A",dx,dy)
             preview = imageOperations.create_preview_from_polys(h, preview,(128,128,128),1)
         
-        exportOperations.export_polys_as_hpgl(lines, output_image.shape, timestamp + "4_black", wp, hp,"70_90",dx,dy,False)
+        exportOperations.export_polys_as_hpgl(lines, output_image.shape, timestamp + "4_black", wp, hp,"A3_7475A",dx,dy,False)
         preview = imageOperations.create_preview_from_polys(lines, preview,(0,0,0),1)
         cv2.imshow("preview", preview)
         
@@ -359,23 +351,14 @@ while cap.isOpened():
         s = json.load(f)
 
         # export
-        #7576a
-        '''
-        dx = -20
+        dx = 0
         dy = 0
-        wp = 280
-        hp = 400
-        '''
-                
-        #7475a
-        dx = 163.5
-        dy = 220
-        wp = 177
+        wp = 220
         hp = 350
 
         p = [[(0, 0), (2, 2), (2, 2), (4, 4)]]
         
-        exportOperations.export_polys_as_hpgl(p, output_image.shape, "grid", wp, hp,"70_90",dx,dy,False)
+        exportOperations.export_polys_as_hpgl(p, output_image.shape, "grid", wp, hp,"A3_7475A",180,dx,dy,False)
 
 
     elif k & 0xFF == 27:

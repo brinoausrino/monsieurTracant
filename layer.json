@@ -1,4 +1,30 @@
-{
+{"hatchWedding": [
+    {
+        "color":"blueGreen",
+    "background": "white",
+    "threshold": {
+        "min": 0,
+        "max": 60
+    },
+    "vignette": {
+        "layer": 0
+    },
+    "hatching": {
+        "active": true,
+        "type": "crossNoise",
+        "angle_lines": 35,
+        "d_lines": 10,
+        "w_lines": 3,
+        "offset": 0,
+        "scale":4
+    },
+    "pretreating": {
+        "active": true,
+        "clipLimit_clahe": 16
+    },
+    "traceMinLength":1,
+    "debug": false
+}],
     "hatchNoise": [
         {
             "color":"blueGreen",
@@ -49,7 +75,7 @@
             "clipLimit_clahe": 16
         },
         "traceMinLength":1,
-        "debug": true
+        "debug": false
     },{
         "color":"cyan",
         "background": "white",
