@@ -342,7 +342,7 @@ while cap.isOpened():
             exportOperations.export_polys_as_hpgl(h, output_image.shape, timestamp +str(i) + "_"+ item["color"], wp, hp,"A3_7475A",dx,dy)
             preview = imageOperations.create_preview_from_polys(h, preview,(128,128,128),1)
         
-        exportOperations.export_polys_as_hpgl(lines, output_image.shape, timestamp + "4_black", wp, hp,"A3_7475A",dx,dy,False)
+        #exportOperations.export_polys_as_hpgl(lines, output_image.shape, timestamp + "4_black", wp, hp,"A3_7475A",dx,dy,False)
         preview = imageOperations.create_preview_from_polys(lines, preview,(0,0,0),1)
         cv2.imshow("preview", preview)
         

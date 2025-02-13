@@ -1,0 +1,249 @@
+{
+  "33": {
+    "inputs": {
+      "image": "temp (109).png",
+      "upload": "image"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "Load Image"
+    }
+  },
+  "36": {
+    "inputs": {
+      "coarse": "disable",
+      "resolution": 512,
+      "image": [
+        "190",
+        0
+      ]
+    },
+    "class_type": "LineArtPreprocessor",
+    "_meta": {
+      "title": "Realistic Lineart"
+    }
+  },
+  "121": {
+    "inputs": {
+      "image": [
+        "36",
+        0
+      ]
+    },
+    "class_type": "ImageInvert",
+    "_meta": {
+      "title": "Invert Image"
+    }
+  },
+  "134": {
+    "inputs": {
+      "model_name": "RealESRGAN_x4.pth"
+    },
+    "class_type": "UpscaleModelLoader",
+    "_meta": {
+      "title": "Load Upscale Model"
+    }
+  },
+  "135": {
+    "inputs": {
+      "upscale_model": [
+        "134",
+        0
+      ],
+      "image": [
+        "121",
+        0
+      ]
+    },
+    "class_type": "ImageUpscaleWithModel",
+    "_meta": {
+      "title": "Upscale Image (using Model)"
+    }
+  },
+  "137": {
+    "inputs": {
+      "mode": "rescale",
+      "supersample": "true",
+      "resampling": "lanczos",
+      "rescale_factor": 0.5,
+      "resize_width": 1024,
+      "resize_height": 1536,
+      "image": [
+        "135",
+        0
+      ]
+    },
+    "class_type": "Image Resize",
+    "_meta": {
+      "title": "Image Resize"
+    }
+  },
+  "190": {
+    "inputs": {
+      "transparency": true,
+      "model": "u2net",
+      "post_processing": false,
+      "only_mask": false,
+      "alpha_matting": false,
+      "alpha_matting_foreground_threshold": 240,
+      "alpha_matting_background_threshold": 10,
+      "alpha_matting_erode_size": 10,
+      "background_color": "none",
+      "images": [
+        "33",
+        0
+      ]
+    },
+    "class_type": "Image Rembg (Remove Background)",
+    "_meta": {
+      "title": "Image Rembg (Remove Background)"
+    }
+  },
+  "196": {
+    "inputs": {
+      "filename_prefix": "ComfyUI",
+      "images": [
+        "137",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "Save Image"
+    }
+  },
+  "201": {
+    "inputs": {
+      "line_thickness": 11,
+      "Clean_up": 15,
+      "deep_Clean_up": 2,
+      "line_color": "black",
+      "color_strength": 10,
+      "details": 9,
+      "smoothness": 3.4000000000000004,
+      "bg_color": "white",
+      "bg_light": 10,
+      "image": [
+        "190",
+        0
+      ]
+    },
+    "class_type": "LineArt_Assistant",
+    "_meta": {
+      "title": "Img2LineArt Assistant"
+    }
+  },
+  "207": {
+    "inputs": {
+      "line_thickness": 11,
+      "Clean_up": 9,
+      "deep_Clean_up": 2,
+      "line_color": "black",
+      "color_strength": 10,
+      "details": 9,
+      "smoothness": 3.4000000000000004,
+      "bg_color": "white",
+      "bg_light": 10,
+      "image": [
+        "190",
+        0
+      ]
+    },
+    "class_type": "LineArt_Assistant",
+    "_meta": {
+      "title": "Img2LineArt Assistant"
+    }
+  },
+  "211": {
+    "inputs": {
+      "upscale_model": [
+        "134",
+        0
+      ],
+      "image": [
+        "201",
+        0
+      ]
+    },
+    "class_type": "ImageUpscaleWithModel",
+    "_meta": {
+      "title": "Upscale Image (using Model)"
+    }
+  },
+  "212": {
+    "inputs": {
+      "images": [
+        "215",
+        0
+      ]
+    },
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "Preview Image"
+    }
+  },
+  "213": {
+    "inputs": {
+      "upscale_model": [
+        "134",
+        0
+      ],
+      "image": [
+        "207",
+        0
+      ]
+    },
+    "class_type": "ImageUpscaleWithModel",
+    "_meta": {
+      "title": "Upscale Image (using Model)"
+    }
+  },
+  "214": {
+    "inputs": {
+      "images": [
+        "216",
+        0
+      ]
+    },
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "Preview Image"
+    }
+  },
+  "215": {
+    "inputs": {
+      "mode": "rescale",
+      "supersample": "true",
+      "resampling": "lanczos",
+      "rescale_factor": 0.5,
+      "resize_width": 1024,
+      "resize_height": 1536,
+      "image": [
+        "211",
+        0
+      ]
+    },
+    "class_type": "Image Resize",
+    "_meta": {
+      "title": "Image Resize"
+    }
+  },
+  "216": {
+    "inputs": {
+      "mode": "rescale",
+      "supersample": "true",
+      "resampling": "lanczos",
+      "rescale_factor": 0.5,
+      "resize_width": 1024,
+      "resize_height": 1536,
+      "image": [
+        "213",
+        0
+      ]
+    },
+    "class_type": "Image Resize",
+    "_meta": {
+      "title": "Image Resize"
+    }
+  }
+}

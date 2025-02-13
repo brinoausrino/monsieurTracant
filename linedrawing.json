@@ -1,0 +1,710 @@
+{
+  "1": {
+    "inputs": {
+      "ckpt_name": "SDXL/sd_xl_base_1.0.safetensors"
+    },
+    "class_type": "CheckpointLoaderSimple",
+    "_meta": {
+      "title": "Load Checkpoint"
+    }
+  },
+  "3": {
+    "inputs": {
+      "vae_name": "SDXL/sdxl_vae.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "Load VAE"
+    }
+  },
+  "5": {
+    "inputs": {
+      "image": "2025-01-28-131724.jpg",
+      "upload": "image"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "Load Image"
+    }
+  },
+  "7": {
+    "inputs": {
+      "image": [
+        "70",
+        0
+      ]
+    },
+    "class_type": "CM_NearestSDXLResolution",
+    "_meta": {
+      "title": "NearestSDXLResolution"
+    }
+  },
+  "9": {
+    "inputs": {
+      "max_width": [
+        "7",
+        0
+      ],
+      "max_height": [
+        "7",
+        1
+      ],
+      "min_width": 0,
+      "min_height": 0,
+      "crop_if_required": "yes",
+      "images": [
+        "70",
+        0
+      ]
+    },
+    "class_type": "ConstrainImage|pysssss",
+    "_meta": {
+      "title": "Constrain Image 🐍"
+    }
+  },
+  "10": {
+    "inputs": {
+      "mode": "caption",
+      "question": "What does the background consist of?",
+      "min_length": 24,
+      "max_length": 128,
+      "num_beams": 5,
+      "no_repeat_ngram_size": 3,
+      "early_stopping": false,
+      "images": [
+        "70",
+        0
+      ],
+      "blip_model": [
+        "11",
+        0
+      ]
+    },
+    "class_type": "BLIP Analyze Image",
+    "_meta": {
+      "title": "BLIP Analyze Image"
+    }
+  },
+  "11": {
+    "inputs": {
+      "blip_model": "Salesforce/blip-image-captioning-base",
+      "vqa_model_id": "Salesforce/blip-vqa-base",
+      "device": "cuda"
+    },
+    "class_type": "BLIP Model Loader",
+    "_meta": {
+      "title": "BLIP Model Loader"
+    }
+  },
+  "12": {
+    "inputs": {
+      "text": [
+        "10",
+        0
+      ],
+      "text2": "a man sitting at a table with a pen and paper in front of him, wearing a hoodie and looking at the camera\n\n"
+    },
+    "class_type": "ShowText|pysssss",
+    "_meta": {
+      "title": "Show Text 🐍"
+    }
+  },
+  "13": {
+    "inputs": {
+      "text": ". black and white, ",
+      "text_b": "colorless, ",
+      "text_c": "lineart, linework.",
+      "text_d": ""
+    },
+    "class_type": "Text String",
+    "_meta": {
+      "title": "Text String"
+    }
+  },
+  "14": {
+    "inputs": {
+      "delimiter": "",
+      "clean_whitespace": "true",
+      "text_a": [
+        "12",
+        0
+      ],
+      "text_b": [
+        "13",
+        0
+      ],
+      "text_c": [
+        "13",
+        1
+      ],
+      "text_d": [
+        "13",
+        2
+      ]
+    },
+    "class_type": "Text Concatenate",
+    "_meta": {
+      "title": "Text Concatenate"
+    }
+  },
+  "15": {
+    "inputs": {
+      "text": ""
+    },
+    "class_type": "Text Multiline",
+    "_meta": {
+      "title": "positive prompt"
+    }
+  },
+  "16": {
+    "inputs": {
+      "text": [
+        "14",
+        0
+      ],
+      "text2": "a man sitting at a table with a pen and paper in front of him, wearing a hoodie and looking at the camera. black and white,colorless,lineart, linework."
+    },
+    "class_type": "ShowText|pysssss",
+    "_meta": {
+      "title": "Show Text 🐍"
+    }
+  },
+  "18": {
+    "inputs": {
+      "text_positive": [
+        "16",
+        0
+      ],
+      "text_negative": "shadows, gry fill, blurry, watermark, text, dark background, thick, color, shading, gradient, transparency",
+      "style": "sai-line art",
+      "log_prompt": true,
+      "style_positive": true,
+      "style_negative": true
+    },
+    "class_type": "SDXLPromptStyler",
+    "_meta": {
+      "title": "SDXL Prompt Styler"
+    }
+  },
+  "21": {
+    "inputs": {
+      "width": [
+        "7",
+        0
+      ],
+      "height": [
+        "7",
+        1
+      ],
+      "crop_w": 0,
+      "crop_h": 0,
+      "target_width": [
+        "7",
+        0
+      ],
+      "target_height": [
+        "7",
+        1
+      ],
+      "text_g": [
+        "18",
+        0
+      ],
+      "text_l": [
+        "18",
+        0
+      ],
+      "clip": [
+        "1",
+        1
+      ]
+    },
+    "class_type": "CLIPTextEncodeSDXL",
+    "_meta": {
+      "title": "CLIPTextEncodeSDXL"
+    }
+  },
+  "22": {
+    "inputs": {
+      "width": [
+        "7",
+        0
+      ],
+      "height": [
+        "7",
+        1
+      ],
+      "crop_w": 0,
+      "crop_h": 0,
+      "target_width": [
+        "7",
+        0
+      ],
+      "target_height": [
+        "7",
+        1
+      ],
+      "text_g": [
+        "18",
+        1
+      ],
+      "text_l": [
+        "18",
+        1
+      ],
+      "clip": [
+        "1",
+        1
+      ]
+    },
+    "class_type": "CLIPTextEncodeSDXL",
+    "_meta": {
+      "title": "CLIPTextEncodeSDXL"
+    }
+  },
+  "23": {
+    "inputs": {
+      "upscale_method": "nearest-exact",
+      "width": 1024,
+      "height": 1024,
+      "crop": "center",
+      "image": [
+        "36",
+        0
+      ]
+    },
+    "class_type": "ImageScale",
+    "_meta": {
+      "title": "Upscale Image"
+    }
+  },
+  "27": {
+    "inputs": {
+      "ipadapter_file": "ip-adapter_sdxl_vit-h.safetensors"
+    },
+    "class_type": "IPAdapterModelLoader",
+    "_meta": {
+      "title": "IPAdapter Model Loader"
+    }
+  },
+  "30": {
+    "inputs": {
+      "control_net_name": "SDXL/control-lora-canny-rank256.safetensors"
+    },
+    "class_type": "ControlNetLoader",
+    "_meta": {
+      "title": "Load ControlNet Model"
+    }
+  },
+  "31": {
+    "inputs": {
+      "control_net_name": "SDXL/control-lora-depth-rank256.safetensors"
+    },
+    "class_type": "ControlNetLoader",
+    "_meta": {
+      "title": "Load ControlNet Model"
+    }
+  },
+  "32": {
+    "inputs": {
+      "coarse": "enable",
+      "resolution": 1024,
+      "image": [
+        "70",
+        0
+      ]
+    },
+    "class_type": "LineArtPreprocessor",
+    "_meta": {
+      "title": "Realistic Lineart"
+    }
+  },
+  "33": {
+    "inputs": {
+      "resolution": 1024,
+      "image": [
+        "70",
+        0
+      ]
+    },
+    "class_type": "Zoe-DepthMapPreprocessor",
+    "_meta": {
+      "title": "Zoe Depth Map"
+    }
+  },
+  "34": {
+    "inputs": {
+      "strength": 0.6,
+      "start_percent": 0,
+      "end_percent": 1,
+      "positive": [
+        "21",
+        0
+      ],
+      "negative": [
+        "22",
+        0
+      ],
+      "control_net": [
+        "31",
+        0
+      ],
+      "image": [
+        "33",
+        0
+      ]
+    },
+    "class_type": "ControlNetApplyAdvanced",
+    "_meta": {
+      "title": "Apply ControlNet"
+    }
+  },
+  "35": {
+    "inputs": {
+      "strength": 0.74,
+      "start_percent": 0,
+      "end_percent": 1,
+      "positive": [
+        "21",
+        0
+      ],
+      "negative": [
+        "22",
+        0
+      ],
+      "control_net": [
+        "30",
+        0
+      ],
+      "image": [
+        "32",
+        0
+      ]
+    },
+    "class_type": "ControlNetApplyAdvanced",
+    "_meta": {
+      "title": "Apply ControlNet"
+    }
+  },
+  "36": {
+    "inputs": {
+      "image": [
+        "32",
+        0
+      ]
+    },
+    "class_type": "ImageInvert",
+    "_meta": {
+      "title": "Invert Image"
+    }
+  },
+  "37": {
+    "inputs": {
+      "pixels": [
+        "36",
+        0
+      ],
+      "vae": [
+        "3",
+        0
+      ]
+    },
+    "class_type": "VAEEncode",
+    "_meta": {
+      "title": "VAE Encode"
+    }
+  },
+  "38": {
+    "inputs": {
+      "amount": 1,
+      "samples": [
+        "37",
+        0
+      ]
+    },
+    "class_type": "RepeatLatentBatch",
+    "_meta": {
+      "title": "Repeat Latent Batch"
+    }
+  },
+  "41": {
+    "inputs": {
+      "samples": [
+        "55",
+        0
+      ],
+      "vae": [
+        "3",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE Decode"
+    }
+  },
+  "43": {
+    "inputs": {
+      "images": [
+        "33",
+        0
+      ]
+    },
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "Preview Image"
+    }
+  },
+  "44": {
+    "inputs": {
+      "images": [
+        "32",
+        0
+      ]
+    },
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "Preview Image"
+    }
+  },
+  "45": {
+    "inputs": {
+      "images": [
+        "36",
+        0
+      ]
+    },
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "Preview Image"
+    }
+  },
+  "46": {
+    "inputs": {
+      "text": [
+        "18",
+        0
+      ],
+      "text2": "line art drawing a man sitting at a table with a pen and paper in front of him, wearing a hoodie and looking at the camera. black and white,colorless,lineart, linework. . professional, sleek, modern, minimalist, graphic, line art, vector graphics"
+    },
+    "class_type": "ShowText|pysssss",
+    "_meta": {
+      "title": "Show Text 🐍"
+    }
+  },
+  "47": {
+    "inputs": {
+      "text": [
+        "18",
+        1
+      ],
+      "text2": "anime, photorealistic, 35mm film, deformed, glitch, blurry, noisy, off-center, deformed, cross-eyed, closed eyes, bad anatomy, ugly, disfigured, mutated, realism, realistic, impressionism, expressionism, oil, acrylic, shadows, gry fill, blurry, watermark, text, dark background, thick, color, shading, gradient, transparency"
+    },
+    "class_type": "ShowText|pysssss",
+    "_meta": {
+      "title": "Show Text 🐍"
+    }
+  },
+  "55": {
+    "inputs": {
+      "add_noise": "enable",
+      "noise_seed": [
+        "85",
+        2
+      ],
+      "steps": 20,
+      "cfg": 10,
+      "sampler_name": "euler_ancestral",
+      "scheduler": "karras",
+      "start_at_step": 0,
+      "end_at_step": 10000,
+      "return_with_leftover_noise": "disable",
+      "model": [
+        "61",
+        0
+      ],
+      "positive": [
+        "35",
+        0
+      ],
+      "negative": [
+        "35",
+        1
+      ],
+      "latent_image": [
+        "38",
+        0
+      ]
+    },
+    "class_type": "KSamplerAdvanced",
+    "_meta": {
+      "title": "KSampler (Advanced)"
+    }
+  },
+  "56": {
+    "inputs": {
+      "images": [
+        "41",
+        0
+      ]
+    },
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "Preview Image"
+    }
+  },
+  "61": {
+    "inputs": {
+      "weight": 0.6,
+      "weight_type": "composition",
+      "combine_embeds": "concat",
+      "start_at": 0,
+      "end_at": 1,
+      "embeds_scaling": "V only",
+      "model": [
+        "1",
+        0
+      ],
+      "ipadapter": [
+        "27",
+        0
+      ],
+      "image": [
+        "23",
+        0
+      ],
+      "clip_vision": [
+        "62",
+        0
+      ]
+    },
+    "class_type": "IPAdapterAdvanced",
+    "_meta": {
+      "title": "IPAdapter Advanced"
+    }
+  },
+  "62": {
+    "inputs": {
+      "clip_name": "CLIP-ViT-H-14-laion2B-s32B-b79K.safetensors"
+    },
+    "class_type": "CLIPVisionLoader",
+    "_meta": {
+      "title": "Load CLIP Vision"
+    }
+  },
+  "65": {
+    "inputs": {
+      "brightness": 0,
+      "contrast": 1,
+      "saturation": 0,
+      "sharpness": 0.91,
+      "blur": 0,
+      "gaussian_blur": 0,
+      "edge_enhance": 0,
+      "detail_enhance": "true",
+      "image": [
+        "41",
+        0
+      ]
+    },
+    "class_type": "Image Filter Adjustments",
+    "_meta": {
+      "title": "Image Filter Adjustments"
+    }
+  },
+  "66": {
+    "inputs": {
+      "images": [
+        "65",
+        0
+      ]
+    },
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "Preview Image"
+    }
+  },
+  "67": {
+    "inputs": {
+      "black_level": 98,
+      "mid_level": 99,
+      "white_level": 100,
+      "image": [
+        "65",
+        0
+      ]
+    },
+    "class_type": "Image Levels Adjustment",
+    "_meta": {
+      "title": "Image Levels Adjustment"
+    }
+  },
+  "69": {
+    "inputs": {
+      "images": [
+        "67",
+        0
+      ]
+    },
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "Preview Image"
+    }
+  },
+  "70": {
+    "inputs": {
+      "transparency": true,
+      "model": "u2net",
+      "post_processing": false,
+      "only_mask": false,
+      "alpha_matting": false,
+      "alpha_matting_foreground_threshold": 240,
+      "alpha_matting_background_threshold": 10,
+      "alpha_matting_erode_size": 10,
+      "background_color": "none",
+      "images": [
+        "5",
+        0
+      ]
+    },
+    "class_type": "Image Rembg (Remove Background)",
+    "_meta": {
+      "title": "Image Rembg (Remove Background)"
+    }
+  },
+  "71": {
+    "inputs": {
+      "images": [
+        "70",
+        0
+      ]
+    },
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "Preview Image"
+    }
+  },
+  "82": {
+    "inputs": {
+      "filename_prefix": "ComfyUI",
+      "images": [
+        "67",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "Save Image"
+    }
+  },
+  "85": {
+    "inputs": {
+      "number_type": "integer",
+      "number": 433457657
+    },
+    "class_type": "Constant Number",
+    "_meta": {
+      "title": "Constant Number"
+    }
+  }
+}

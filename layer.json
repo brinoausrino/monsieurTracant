@@ -1,133 +1,216 @@
-{"hatchWedding": [
-    {
-        "color":"blueGreen",
-    "background": "white",
-    "threshold": {
-        "min": 0,
-        "max": 60
-    },
-    "vignette": {
-        "layer": 0
-    },
-    "hatching": {
-        "active": true,
-        "type": "crossNoise",
-        "angle_lines": 35,
-        "d_lines": 10,
-        "w_lines": 3,
-        "offset": 0,
-        "scale":4
-    },
-    "pretreating": {
-        "active": true,
-        "clipLimit_clahe": 16
-    },
-    "traceMinLength":1,
-    "debug": false
-}],
+{
+    "hatchWedding": [
+        {
+            "color": "blueGreen",
+            "background": "white",
+            "threshold": {
+                "min": 0,
+                "max": 60
+            },
+            "vignette": {
+                "layer": 0
+            },
+            "hatching": {
+                "active": true,
+                "type": "crossNoise",
+                "angle_lines": 35,
+                "d_lines": 10,
+                "w_lines": 3,
+                "offset": 0,
+                "scale": 4
+            },
+            "pretreating": {
+                "active": true,
+                "clipLimit_clahe": 16
+            },
+            "traceMinLength": 1,
+            "debug": false
+        }
+    ],
     "hatchNoise": [
         {
-            "color":"blueGreen",
-        "background": "white",
-        "threshold": {
-            "min": 0,
-            "max": 25
+            "color": "blueGreen",
+            "background": "white",
+            "threshold": {
+                "min": 0,
+                "max": 25
+            },
+            "vignette": {
+                "layer": 0
+            },
+            "hatching": {
+                "active": true,
+                "type": "crossNoise",
+                "angle_lines": 35,
+                "d_lines": 10,
+                "w_lines": 3,
+                "offset": 0,
+                "scale": 4
+            },
+            "pretreating": {
+                "active": false,
+                "clipLimit_clahe": 16
+            },
+            "traceMinLength": 1,
+            "debug": false
         },
-        "vignette": {
-            "layer": 0
+        {
+            "color": "blueViolet",
+            "background": "white",
+            "threshold": {
+                "min": 25,
+                "max": 50
+            },
+            "vignette": {
+                "layer": 128
+            },
+            "hatching": {
+                "active": true,
+                "type": "crossNoise",
+                "angle_lines": 80,
+                "d_lines": 10,
+                "w_lines": 3,
+                "offset": 78,
+                "scale": 4
+            },
+            "pretreating": {
+                "active": true,
+                "clipLimit_clahe": 16
+            },
+            "traceMinLength": 1,
+            "debug": false
         },
-        "hatching": {
-            "active": true,
-            "type": "crossNoise",
-            "angle_lines": 35,
-            "d_lines": 10,
-            "w_lines": 3,
-            "offset": 0,
-            "scale":4
+        {
+            "color": "cyan",
+            "background": "white",
+            "threshold": {
+                "min": 50,
+                "max": 75
+            },
+            "vignette": {
+                "layer": 255
+            },
+            "hatching": {
+                "active": true,
+                "type": "crossNoise",
+                "angle_lines": 125,
+                "d_lines": 10,
+                "w_lines": 3,
+                "offset": 230,
+                "scale": 4
+            },
+            "pretreating": {
+                "active": true,
+                "clipLimit_clahe": 16
+            },
+            "traceMinLength": 1,
+            "debug": false
         },
-        "pretreating": {
-            "active": true,
-            "clipLimit_clahe": 16
-        },
-        "traceMinLength":1,
-        "debug": false
-    },{
-        "color":"blueViolet",
-        "background": "white",
-        "threshold": {
-            "min": 25,
-            "max": 50
-        },
-        "vignette": {
-            "layer": 128
-        },
-        "hatching": {
-            "active": true,
-            "type": "crossNoise",
-            "angle_lines": 80,
-            "d_lines": 10,
-            "w_lines": 3,
-            "offset": 78,
-            "scale":4
-        },
-        "pretreating": {
-            "active": true,
-            "clipLimit_clahe": 16
-        },
-        "traceMinLength":1,
-        "debug": false
-    },{
-        "color":"cyan",
-        "background": "white",
-        "threshold": {
-            "min": 50,
-            "max": 75
-        },
-        "vignette": {
-            "layer": 255
-        },
-        "hatching": {
-            "active": true,
-            "type": "crossNoise",
-            "angle_lines": 125,
-            "d_lines": 10,
-            "w_lines": 3,
-            "offset": 230,
-            "scale":4
-        },
-        "pretreating": {
-            "active": true,
-            "clipLimit_clahe": 16
-        },
-        "traceMinLength":1,
-        "debug": false
-    },{
-        "color":"magenta",
-        "background": "white",
-        "threshold": {
-            "min": 75,
-            "max": 100
-        },
-        "vignette": {
-            "layer": 400
-        },
-        "hatching": {
-            "active": true,
-            "type": "crossNoise",
-            "angle_lines": 170,
-            "d_lines": 10,
-            "w_lines": 3,
-            "offset": 450,
-            "scale":4
-        },
-        "pretreating": {
-            "active": true,
-            "clipLimit_clahe": 16
-        },
-        "traceMinLength":1,
-        "debug": false
-    }
-],
+        {
+            "color": "magenta",
+            "background": "white",
+            "threshold": {
+                "min": 75,
+                "max": 100
+            },
+            "vignette": {
+                "layer": 400
+            },
+            "hatching": {
+                "active": true,
+                "type": "crossNoise",
+                "angle_lines": 170,
+                "d_lines": 10,
+                "w_lines": 3,
+                "offset": 450,
+                "scale": 4
+            },
+            "pretreating": {
+                "active": true,
+                "clipLimit_clahe": 16
+            },
+            "traceMinLength": 1,
+            "debug": false
+        }
+    ],
+    "hatchTest": [
+        {
+            "color": "black1",
+            "background": "white",
+            "threshold": {
+                "min": 0,
+                "max": 255
+            },
+            "vignette": {
+                "layer": 0
+            },
+            "hatching": {
+                "active": true,
+                "type": "straight",
+                "angle_lines": 35,
+                "d_lines": 7,
+                "w_lines": 2,
+                "offset": 0,
+                "scale": 4
+            },
+            "pretreating": {
+                "active": false,
+                "clipLimit_clahe": 16
+            },
+            "traceMinLength": 1,
+            "debug": true
+        },{
+            "color": "black2",
+            "background": "white",
+            "threshold": {
+                "min": 0,
+                "max": 255
+            },
+            "vignette": {
+                "layer": 0
+            },
+            "hatching": {
+                "active": true,
+                "type": "straight",
+                "angle_lines": 35,
+                "d_lines": 7,
+                "w_lines": 2,
+                "offset": 4,
+                "scale": 4
+            },
+            "pretreating": {
+                "active": false,
+                "clipLimit_clahe": 16
+            },
+            "traceMinLength": 1,
+            "debug": true
+        },{
+            "color": "black3",
+            "background": "white",
+            "threshold": {
+                "min": 0,
+                "max": 255
+            },
+            "vignette": {
+                "layer": 0
+            },
+            "hatching": {
+                "active": true,
+                "type": "straight",
+                "angle_lines": 35,
+                "d_lines": 7,
+                "w_lines": 2,
+                "offset": 2,
+                "scale": 4
+            },
+            "pretreating": {
+                "active": false,
+                "clipLimit_clahe": 16
+            },
+            "traceMinLength": 1,
+            "debug": true
+        }
+    ],
     "hatchStraight": {
         "background": "white",
         "threshold": {
@@ -149,23 +232,23 @@
             "active": true,
             "clipLimit_clahe": 2
         },
-        "traceMinLength":2,
+        "traceMinLength": 2,
         "debug": false
     },
-    "testNoise":{
-        "d_lines":10,
-        "scale":5,
-        "octaves":9,
-        "frequency":0.06,
-        "w_lines":3,
-        "lacunarity":1
+    "testNoise": {
+        "d_lines": 10,
+        "scale": 5,
+        "octaves": 9,
+        "frequency": 0.06,
+        "w_lines": 3,
+        "lacunarity": 1
     },
-    "testNoise2":{
-        "d_lines":20,
-        "scale":10,
-        "octaves":9,
-        "frequency":0.06,
-        "w_lines":3,
-        "lacunarity":1
+    "testNoise2": {
+        "d_lines": 20,
+        "scale": 10,
+        "octaves": 9,
+        "frequency": 0.06,
+        "w_lines": 3,
+        "lacunarity": 1
     }
 }

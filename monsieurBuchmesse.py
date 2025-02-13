@@ -166,6 +166,7 @@ def update_navigation(key,current_state,image_container,line_container):
 ##############
 # main script
 ##############
+
 # init mediapipe detectors for face and background subtraction
 mp_drawing = mp.solutions.drawing_utils
 mp_selfie_segmentation = mp.solutions.selfie_segmentation

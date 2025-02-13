@@ -22,7 +22,20 @@ paper_formats = {
         "hpgl_coords":[[0, 0],[16158, 11040]],
         "device":"hp7475a",
         "page_size":"a3"
+    },
+    "A6_7475A":{
+        "size_mm" : [210,297],
+        "hpgl_coords":[[1140, 6581],[3568, 7471]],
+        "device":"hp7475a",
+        "page_size":"a4",
+        "signature":{
+            "pos":[6000,1200],
+            "size":0.3,
+            "rot":0,
+            "text":"CS34;LBTra\\ant'25"
+        }
     }
+
 }
 
 def map(value,  inputMin,  inputMax,  outputMin,  outputMax, clamp = True):
@@ -109,10 +122,15 @@ def hpgl_remove_pen_select_commands(file,backToZero = True):
         # Writing the replaced data
         f.write(data)
 
-def hpgl_add_signature(file,position,font_size=0.8):
+def hpgl_add_signature(file,settings,font_size=0.8):
     data = None
     with open(file, 'r') as f:
-        signature =  ";PU"+str(position[0])+","+str(position[1])+";DT ;SI" + str(font_size*0.625)+"," + str(font_size) + ";DI-1,0;CS34;LBTra\\ant'23 ;IN;"
+        angle = ";DI-1,0"
+        if settings["rot"] == 0:
+            angle = ";DI1,0"
+        if settings["rot"] == 90:
+            angle = ";DI0,1"
+        signature =  ";PU"+str(settings["pos"][0])+","+str(settings["pos"][1])+";DT ;SI" + str(settings["size"]*0.625)+"," + str(settings["size"]) + angle +";" + settings["text"] + " ;IN;"
         
         # Reading the content of the file
         data = f.read()
@@ -145,7 +163,7 @@ def svg_to_hpgl(input_file,output_file, format="70_90",add_signature = False,pos
     output, error = process.communicate()
 
     if add_signature:
-        hpgl_add_signature(output_file, pos_signature)
+        hpgl_add_signature(output_file, paper_formats[format]["signature"])
     
     if format != "70_90":
         hpgl_remove_pen_select_commands(output_file,False)

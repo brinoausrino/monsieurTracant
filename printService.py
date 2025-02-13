@@ -99,9 +99,11 @@ while True:
         if v == "":
             print_file = watchfolder + "/" + filename_parts[0]+"_" + filename_parts[1] + "_" + filename_parts[2] +".hpgl"
             bashCommand = "python hp7475a_send.py " + print_file + " -p " + settings["hardware"]["plotterSerial"]
-            process = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
+            process = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
             #process = subprocess.run(bashCommand.split(), capture_output=True)
             output, error = process.communicate()
+            print("Text:", output)
+
             move_files(filename_parts[0] + "_" + filename_parts[1]) 
         elif v == "l":
             move_files(filename_parts[0] + "_" + filename_parts[1])

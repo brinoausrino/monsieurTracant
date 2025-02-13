@@ -41,7 +41,7 @@ def img_to_polys(img,settings={"threshold":{"min":128,
             pattern = create_cross_noise_pattern(img, settings["hatching"]["d_lines"], settings["hatching"]["angle_lines"], settings["hatching"]["w_lines"], 
                                             offset=settings["hatching"]["offset"])
         else:
-            pattern = create_hatch_pattern(img,settings["hatching"]["d_lines"], settings["hatching"]["angle_lines"], settings["hatching"]["w_lines"])
+            pattern = create_hatch_pattern(img,settings["hatching"]["d_lines"], settings["hatching"]["angle_lines"], settings["hatching"]["w_lines"],settings["hatching"]["offset"])
 
         # mask image with pattern
         img = cv2.bitwise_and(img, img, mask=pattern)
@@ -103,7 +103,10 @@ def extract_contours(img, render_quality=768, export_preview=False, tracing_reso
 
     _, preview_img = cv2.threshold(preview_img, 128, 255, cv2.THRESH_BINARY)
 
+    cv2.imshow("preview", preview_img)
+
     p1 = trace_image(preview_img, False,tracing_resolution)
+
     #cv2.imshow("line "+str(tracing_resolution), i1)
     
     # hatch line tracing
@@ -175,10 +178,10 @@ def clamp_threshold(img, threshold_min,threshold_max):
                 img_temp[y, x] = 0 if img_temp[y, x] >= threshold_min and img_temp[y, x] <= threshold_max else 255
     return img_temp
 
-def create_hatch_pattern(preview_img, d_lines, angle_lines, w_lines):
+def create_hatch_pattern(preview_img, d_lines, angle_lines, w_lines,offset=0):
     w_pattern = int(math.sqrt(max(preview_img.shape[0], preview_img.shape[1]) ** 2 / 2)*2)
     pattern = np.zeros((w_pattern, w_pattern, 1), np.uint8,)
-    for y in range(0, pattern.shape[0], d_lines):
+    for y in range(offset, pattern.shape[0], d_lines):
         cv2.line(pattern, (y, 0), (y, pattern.shape[0]), 255, w_lines)
 
     pattern = ndimage.rotate(pattern, angle_lines, reshape=False, order=0, prefilter=False)

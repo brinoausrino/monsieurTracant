@@ -38,3 +38,7 @@ tqdm==4.64.0
 urllib3==1.26.10
 websockets==10.3
 zipp==3.8.0
+websocket-client
+Pillow
+requests
+requests-toolbelt

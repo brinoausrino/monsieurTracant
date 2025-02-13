@@ -1,0 +1,95 @@
+{
+  "15": {
+    "inputs": {
+      "images": [
+        "20",
+        0
+      ]
+    },
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "Preview Image"
+    }
+  },
+  "16": {
+    "inputs": {
+      "images": [
+        "46",
+        0
+      ]
+    },
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "Preview Image"
+    }
+  },
+  "20": {
+    "inputs": {
+      "transparency": true,
+      "model": "u2net",
+      "post_processing": false,
+      "only_mask": false,
+      "alpha_matting": false,
+      "alpha_matting_foreground_threshold": 240,
+      "alpha_matting_background_threshold": 10,
+      "alpha_matting_erode_size": 10,
+      "background_color": "none",
+      "images": [
+        "44",
+        0
+      ]
+    },
+    "class_type": "Image Rembg (Remove Background)",
+    "_meta": {
+      "title": "Image Rembg (Remove Background)"
+    }
+  },
+  "33": {
+    "inputs": {
+      "images": [
+        "34",
+        0
+      ]
+    },
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "Preview Image"
+    }
+  },
+  "34": {
+    "inputs": {
+      "coarse": "enable",
+      "resolution": 768,
+      "image": [
+        "20",
+        0
+      ]
+    },
+    "class_type": "LineArtPreprocessor",
+    "_meta": {
+      "title": "Realistic Lineart"
+    }
+  },
+  "44": {
+    "inputs": {
+      "image": "temp (25).png",
+      "upload": "image"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "Load Image"
+    }
+  },
+  "46": {
+    "inputs": {
+      "image": [
+        "34",
+        0
+      ]
+    },
+    "class_type": "ImageInvert",
+    "_meta": {
+      "title": "Invert Image"
+    }
+  }
+}
