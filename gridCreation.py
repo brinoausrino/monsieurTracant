@@ -271,9 +271,9 @@ def create_perspective_grid(config):
         or preview_img.shape[1] != int(w_mask)
         or preview_img.shape[0] != int(h_mask)
     ):
-        preview_img = np.ones((int(h_mask), int(w_mask)), np.uint8) * 255
-    else:
-        preview_img = cv2.cvtColor(preview_img, cv2.COLOR_BGR2GRAY)
+        preview_img = np.ones((int(h_mask), int(w_mask),3), np.uint8) * 255
+    #else:
+    #    preview_img = cv2.cvtColor(preview_img, cv2.COLOR_BGR2GRAY)
 
     return {
         "cm_to_px" : cm_to_px,

@@ -245,5 +245,17 @@
     "_meta": {
       "title": "Image Resize"
     }
+  },
+  "217": {
+    "inputs": {
+      "images": [
+        "190",
+        0
+      ]
+    },
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "Preview Image"
+    }
   }
 }

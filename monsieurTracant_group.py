@@ -34,6 +34,7 @@ states = ["cam","shooting","image_select","style_select","export"]
 current_state = "cam"
 image_container = []
 line_container = []
+bg_image = {}
 
 # params for image size and position in grid
 grid = []
@@ -142,15 +143,11 @@ def create_line_variations(image_container,line_container):
 		cv2.putText(preview,str(i), (20 + i*image_container[0].shape[1],100), cv2.FONT_HERSHEY_SIMPLEX, 2, 0)
 	cv2.imshow("tracant", preview)
 
-def finalize_image(output_image,lines,output_image2):
+def finalize_image(output_image,lines):
 
 	image = cv2.imread("output/image_217.png", cv2.IMREAD_UNCHANGED)  
 	image = rgba_to_grayscale_white_background(image)
-	#image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
 	image = cv2.resize(image, (output_image.shape[1],output_image.shape[0]))
- 
- 
- 
 
 	f = open("layer.json")
 	s = json.load(f)
@@ -178,8 +175,54 @@ def finalize_image(output_image,lines,output_image2):
 	cv2.putText(preview,"Leertaste fuer neue Aufnahme", (20,40), cv2.FONT_HERSHEY_SIMPLEX, 0.8, 0)
 	cv2.imshow("tracant", preview)
 
+def finalize_image_group(output_image,lines):
+
+	# get current position in grid from counter.json
+	f = open("counter.json")
+	cf = json.load(f)
+	currentId = cf["currentId"]
+
+	# get size and position settings for current element
+	elemSettings = layout["grid"][currentId]
+
+	# rotate images
+	#output_image = cv2.rotate(output_image, cv2.ROTATE_90_COUNTERCLOCKWISE)
+
+	# positioning
+	dx = elemSettings["x"]*10
+	dy = elemSettings["y"]*10
+	wp = elemSettings["width"]*10
+	hp = elemSettings["height"]*10
+
+	f = open("layer.json")
+	s = json.load(f)
+
+	timestamp = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S_")
+
+	preview = output_image.copy()
+	preview = cv2.rotate(preview, cv2.ROTATE_90_COUNTERCLOCKWISE)
+
+	preview[:] = 255
+		
+	for i,item in enumerate(s["hatchWedding"]):
+		h = imageOperations.img_to_polys(output_image,item)
+		exportOperations.export_polys_as_hpgl(h, (int(output_image.shape[1]),int(output_image.shape[0])), timestamp +str(i) + "_"+ item["color"], wp, hp,"70_90",270,dx,dy)
+		preview = imageOperations.create_preview_from_polys(h, preview,(0,0,0),1)
+		
+	exportOperations.export_polys_as_hpgl(lines, (int(output_image.shape[1]),int(output_image.shape[0])), timestamp + "4_black", wp, hp,"70_90",270,dx,dy)
+	preview = imageOperations.create_preview_from_polys(lines, preview,(0,0,0),1)
+	cv2.putText(preview,"Leertaste fuer neue Aufnahme", (20,40), cv2.FONT_HERSHEY_SIMPLEX, 0.8, 0)
+	cv2.imshow("tracant", preview)
+ 
+ 
+	# update id and write to file
+	cf["currentId"] += 1
+	with open("counter.json", "w") as f:
+		json.dump(cf, f)
+ 
 
 def update_navigation(key,current_state,image_container,line_container):
+	global bg_image
 	if current_state == "image_select" or current_state == "style_select":
 		temp = image_container[0]
 		for i in range(len(image_container)):
@@ -190,48 +233,125 @@ def update_navigation(key,current_state,image_container,line_container):
 			#comfy
 			cv2.imwrite("temp.png", image_container[key])
 			imgs = comfyAdapter.run_comfy_workflow("temp.png")
+   
+			bg_image = cv2.imread("output/image_217.png", cv2.IMREAD_UNCHANGED)  
+			bg_image = rgba_to_grayscale_white_background(bg_image)
+			bg_image,mask = create_group_mask(bg_image)
 
 			image_container[0] = cv2.imread("output/image_212.png", 0)
 			image_container[1] = cv2.imread("output/image_214.png", 0)
 			image_container[2] = cv2.imread("output/image_196.png", 0)
 			image_container[3] = cv2.imread("output/image_196.png", 0)
-			#image_container[0] = preview_img
-			#for i in range(1,len(image_container)):
-			#	image_container[i] = preview_img2.copy()
+			
+			for img in image_container:
+				t_mask = mask.copy()
+				t_mask = cv2.resize(t_mask, (img.shape[1],img.shape[0]))
+				img = np.maximum(img, t_mask)
+   
 			create_line_variations(image_container,line_container)
 
+
 		elif current_state == "style_select":
-			finalize_image(image_container[0],line_container[key],output_image)
+			bg_image = cv2.resize(bg_image,(image_container[0].shape[1],image_container[0].shape[0]))
+			finalize_image_group(bg_image,line_container[key])
+
 			current_state = "export"
 			
 			#create_line_variations(image_container,line_container)
 	return current_state,line_container
 
+def create_group_mask(output_image):
+	# get current position in grid from counter.json
+	f = open("counter.json")
+	cf = json.load(f)
+	currentId = cf["currentId"]
+	
+	mask = output_image.copy()
+	mask_img = layout["mask_img"]
+	preview_img = layout["preview_img"]
+
+	# get size and position settings for current element
+	elemSettings = layout["grid"][currentId]
+
+	# rotate images
+	output_image = cv2.rotate(output_image, cv2.ROTATE_90_COUNTERCLOCKWISE)
+	mask = cv2.rotate(mask, cv2.ROTATE_90_COUNTERCLOCKWISE)
+
+	x_px = elemSettings["xPx"]
+	y_px = elemSettings["yPx"]
+	w_px = elemSettings["widthPx"]
+	h_px = elemSettings["heightPx"]
+
+	
+
+	# extract t_mask from mask_img to mask image
+	t_mask = mask_img[y_px: y_px + h_px, x_px: x_px + w_px]
+	t_mask = cv2.resize(t_mask, (output_image.shape[1], output_image.shape[0]))
+	t_mask = np.invert(t_mask)
+	
+	# convert mask image to grayscale and mask it
+	mask = cv2.cvtColor(mask, cv2.COLOR_RGB2GRAY)
+	_, mask = cv2.threshold(mask, 254, 255, cv2.THRESH_BINARY)
+ 
+ 	# scale and translate mask for mask_img 
+	mask_scaled_size = (w_px, h_px)
+	mask_scaled = cv2.resize(mask, mask_scaled_size)
+ 
+	# mask rgb image
+	t_mask_rgb = cv2.cvtColor(t_mask, cv2.COLOR_GRAY2RGB)
+	output_image = np.maximum(output_image, t_mask_rgb)
+
+	# create and show preview image
+	# resize the output_image, merge it with matiching section of preview image 
+	# and insert merged image
+	preview_img[y_px: y_px + h_px, x_px: x_px + w_px] = np.minimum(
+		preview_img[y_px: y_px + h_px, x_px: x_px + w_px], 
+		cv2.resize(output_image, mask_scaled_size)
+	)
+	cv2.imshow("preview_img", preview_img)
+
+	# update mask with current image
+	mask_img[y_px: y_px + h_px, x_px: x_px + w_px] = np.minimum(
+		mask_scaled, mask_img[y_px: y_px + h_px, x_px: x_px + w_px]
+	)
+
+	# export image and mask
+	cv2.imwrite(config["outputFolder"] + "preview.bmp", preview_img)
+	cv2.imwrite(config["outputFolder"] + "mask.bmp", mask_img)
+	cv2.imwrite(config["outputFolder"] + str(currentId) + ".bmp", output_image)
+ 
+	# rotate back
+	output_image = cv2.rotate(output_image, cv2.ROTATE_90_CLOCKWISE)
+	t_mask = cv2.rotate(t_mask, cv2.ROTATE_90_CLOCKWISE)
+	
+	return output_image,t_mask
 
 def rgba_to_grayscale_white_background(img):
-    # Read the image with transparency
+	# Read the image with transparency
    # img = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
+	
+	if img.shape[2] != 4:
+		raise ValueError("Input image must have an alpha channel (RGBA format)")
+	
+	# Split the color and alpha channels
+	bgr = img[:, :, :3]
+	alpha = img[:, :, 3]
+	
+	# Create a white background (RGB)
+	white_bg = np.ones_like(bgr) * 255
     
-    if img.shape[2] != 4:
-        raise ValueError("Input image must have an alpha channel (RGBA format)")
+    # Reshape alpha to match RGB dimensions
+	alpha_normalized = alpha / 255.0
+	alpha_3d = np.stack([alpha_normalized] * 3, axis=-1)
     
-    # Split the color and alpha channels
-    bgr = img[:, :, :3]
-    alpha = img[:, :, 3]
+    # Blend RGB image with white background based on alpha
+	result = (bgr * alpha_3d + white_bg * (1 - alpha_3d)).astype(np.uint8)
     
-    # Convert BGR to grayscale
-    gray = cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY)
-    
-    # Create a white background
-    white_bg = np.ones_like(gray) * 255
-    
-    # Blend grayscale image with white background based on alpha
-    alpha_normalized = alpha / 255.0
-    result = (gray * alpha_normalized + white_bg * (1 - alpha_normalized)).astype(np.uint8)
-    
-    result = cv2.cvtColor(result, cv2.COLOR_GRAY2RGB)
-    
-    return result
+	
+	return result
+
+
+
 
 ##############
 # main script
@@ -248,7 +368,7 @@ face_detection = mp_face_detection.FaceDetection(
 selfie_segmentation = mp_selfie_segmentation.SelfieSegmentation(model_selection=1)
 
 # create grid
-layout = gridCreation.create_grid(config)
+layout = gridCreation.create_perspective_grid(config)
 
 # show usage/documentation in console
 show_usage()
@@ -368,41 +488,32 @@ while cap.isOpened():
 		current_state,line_container = update_navigation(2, current_state, image_container, line_container)
 	elif k == ord("3"):
 		current_state,line_container = update_navigation(3, current_state, image_container, line_container)
-
-	elif k == ord("#"):
-		current_state = "style_select"
+	elif k == ord("p"):
+		
+		bg_image = cv2.imread("output/image_217.png", cv2.IMREAD_UNCHANGED)  
+		bg_image = rgba_to_grayscale_white_background(bg_image)
+		
+		bg_image,mask = create_group_mask(bg_image)
+  
 		line_container = []
+		image_container = []
+		image_container.append(cv2.imread("output/image_212.png", 0))
+		image_container.append(cv2.imread("output/image_214.png", 0))
+		image_container.append(cv2.imread("output/image_196.png", 0))
+		image_container.append(cv2.imread("output/image_196.png", 0))
 
-		image_container.append(cv2.imread("output/image_202.png", 0))
-		image_container.append(cv2.imread("output/image_202.png", 0))
-		image_container.append(cv2.imread("output/image_202.png", 0))
-		image_container.append(cv2.imread("output/image_202.png", 0))
+		for img in image_container:
+			t_mask = mask.copy()
+			t_mask = cv2.resize(t_mask, (img.shape[1],img.shape[0]))
+			img = np.maximum(img, t_mask)
+		
+		create_line_variations(image_container,line_container)
+  
+		bg_image = cv2.resize(bg_image,(image_container[0].shape[1],image_container[0].shape[0]))
 
-		erodes = [0,2,6,2]
-		dilates = [0,2,3,2]
-		#dilates = [0,2,2,2]
-		#blurs = [0,3,13,23]
-
-
-		scale = 0.5
-		size = (int(image_container[3].shape[1]*scale) , int(image_container[3].shape[0]*scale))
-
-		for i in range(len(image_container)):
-			dilateK =  np.ones((1,1), np.uint8)
-			dilated_image = cv2.erode(image_container[i], dilateK, iterations=1)
-			_, binary_thresh = cv2.threshold(dilated_image, 220, 255, cv2.THRESH_BINARY)
-			binary_thresh = cv2.bitwise_not(binary_thresh)
-			image_container[i] = binary_thresh.copy()
-			image_container[i] = cv2.resize(image_container[i], size)
-			line_container.append(imageOperations.trace_image(image_container[i], False,2)) #imageOperations.extract_contours(image_container[i]))
-			image_container[i][:] = 255
-			image_container[i] = imageOperations.create_preview_from_polys(line_container[i], image_container[i],(0,0,0),1)
-		preview = np.concatenate((image_container), axis=1)
-		cv2.putText(preview,"Bild auswaehlen- (n abbruch)", (20,40), cv2.FONT_HERSHEY_SIMPLEX, 1.2, 0)
-		for i in range(len(image_container)):
-			cv2.putText(preview,str(i), (20 + i*image_container[0].shape[1],100), cv2.FONT_HERSHEY_SIMPLEX, 2, 0)
-		cv2.imshow("tracant", preview)
-
+		finalize_image_group(bg_image,line_container[3])
+		current_state = "export"
+  
 
 	elif k & 0xFF == 27:
 		break
